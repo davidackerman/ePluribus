@@ -169,7 +169,9 @@ node tests/e2e.mjs http://127.0.0.1:8765/ /tmp/ep_shots
 
 The site is live at https://davidackerman.github.io/ePluribus/. `.github/workflows/pages.yml`
 pushes `web/` to the `gh-pages` branch whenever `web/` changes (as coresample does), and
-GitHub Pages serves that branch.
+GitHub Pages serves that branch. On the way it stamps the commit on every module, the worker
+and `packs.json` (`app.js?v=...`), because Pages' CDN keeps files for 10 minutes and a page
+mixing two deploys' scripts would break.
 
 ## Credits and licences
 

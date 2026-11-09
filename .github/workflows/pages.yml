@@ -32,6 +32,18 @@ jobs:
           done
           du -sh web
 
+      # Pages' CDN caches each file for 10 minutes, so right after a deploy a visitor could get
+      # the new app.js with an old maps.js (and a broken page). Stamping this deploy's version
+      # on every module, the worker and the catalog makes each page load one consistent set.
+      - name: Version the files
+        run: |
+          V=${GITHUB_SHA::8}
+          sed -i -E "s#(from \"\./[a-z]+\.js)\"#\1?v=$V\"#; s#(new URL\(\"\./worker\.js)\"#\1?v=$V\"#; s#fetch\(\"(packs/packs\.json|samples/demo-recipe\.txt)\"\)#fetch(\"\1?v=$V\")#" web/*.js
+          sed -i -E "s#href=\"style\.css\"#href=\"style.css?v=$V\"#; s#src=\"app\.js\"#src=\"app.js?v=$V\"#" web/index.html
+          for f in app.js worker.js share.js stats.js index.html; do
+            grep -q "?v=$V" "web/$f" || { echo "::error::web/$f was not versioned"; exit 1; }
+          done
+
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
