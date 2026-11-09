@@ -182,7 +182,7 @@
     11
    ],
    "noDataBlack": true,
-   "credit": "NASA/JPL/MSSS/Caltech Murray Lab/Esri: CTX global mosaic of Mars",
+   "credit": "NASA/JPL/MSSS/The Murray Lab: CTX global mosaic of Mars (free for all uses with this credit; tiles served by Esri)",
    "family": "Mars",
    "coresample": "mars-ctx",
    "thumb": "thumbs/mars_map.jpg"

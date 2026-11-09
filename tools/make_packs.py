@@ -79,7 +79,7 @@ MAPS = [
          url="https://astro.arcgis.com/arcgis/rest/services/OnMars/CTX/MapServer/tile/{z}/{y}/{x}",
          skipZooms=[5, 11],  # broken in Esri's cache (see coresample)
          noDataBlack=True,   # gaps between CTX strips are pure black
-         credit="NASA/JPL/MSSS/Caltech Murray Lab/Esri: CTX global mosaic of Mars",
+         credit="NASA/JPL/MSSS/The Murray Lab: CTX global mosaic of Mars (free for all uses with this credit; tiles served by Esri)",
          family="Mars", coresample="mars-ctx", thumb_tile=(8, 366, 101)),  # Jezero crater
     dict(id=202, key="andromeda", name="Andromeda (Hubble)", kind="zoomify",
          base="https://cdn.esahubble.org/archives/images/zoomable/heic1502a",

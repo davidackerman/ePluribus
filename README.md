@@ -125,6 +125,7 @@ Without a short-link store (`web/config.js`), the live site shares full-recipe l
 - Check the licence of every bundled image and live map. The bundled images' `credit`
   fields come from scikit-image's docstrings. NASA images are generally public domain;
   ESA/Hubble and ESA/Webb images are CC BY 4.0 (credit required); check the Murray Lab/Esri
-  terms for the Mars mosaic.
+  terms for the Mars mosaic (the Murray Lab grants free use for all purposes with the credit
+  "NASA/JPL/MSSS/The Murray Lab").
 - Host it somewhere static (e.g. GitHub Pages). Short links also need a small store (see
   above); everything else is static.
