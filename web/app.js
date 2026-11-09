@@ -422,7 +422,7 @@ const workerCount = () => Math.max(1, Math.min(8, (navigator.hardwareConcurrency
 function showStage({ replay }) {
   $("stage").hidden = false;
   $("targetBox").hidden = replay;
-  for (const id of ["actions", "scrubRow", "playRow", "sheetBlock", "gifBox", "composition", "guessBtn", "guessNote"]) $(id).hidden = true;
+  for (const id of ["actions", "scrubRow", "orderRow", "playRow", "sheetBlock", "gifBox", "composition", "guessBtn", "guessNote"]) $(id).hidden = true;
   $("shareNote").textContent = "";
   $("addingLabel").textContent = "";
   $("addingCanvas").getContext("2d").clearRect(0, 0, 64, 64);
@@ -430,7 +430,7 @@ function showStage({ replay }) {
   $("stage").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function showAdding(run, i) {
+function showAdding(run, i, step = i + 1) {
   if (i < 0 || !run.atoms64[i]) return;
   const p = run.pieces[i], sheet = run.sheet;
   drawBytes($("addingCanvas"), run.atoms64[i].u8, run.C, N);
@@ -441,7 +441,7 @@ function showAdding(run, i) {
   box.replaceChildren();
   const a = document.createElement("div"), b = document.createElement("div");
   a.className = "ell";
-  a.textContent = a.title = `#${i + 1}: ${p.src.title}`;
+  a.textContent = a.title = `#${step}: ${p.src.title}`;
   b.className = "ell";
   const share = sheet ? ` \u00b7 adds ${((100 * sheet.contrib[i]) / sheet.contrib.reduce((x, y) => x + y, 0)).toFixed(1)}%` : "";
   b.textContent = `${p.s} px crop${p.o ? (p.o & 4 ? ", flipped" : ", turned") : ""}${share}`;
@@ -559,7 +559,6 @@ async function finishBuild(run) {
   setupScrub(run, n);
   renderAt(n);
   buildSheet(run);
-  showAdding(run, n - 1);
   buildCredits(run);
   showComposition(run);
   $("actions").hidden = false;
@@ -576,6 +575,7 @@ function setupScrub(run, value) {
   s.max = String(run.n);
   s.value = String(value);
   $("scrubRow").hidden = false;
+  $("orderRow").hidden = false;
   $("sheetBlock").hidden = false;
 }
 
@@ -585,15 +585,26 @@ function renderAt(k) {
   k = Math.max(1, Math.min(run.n, k));
   $("scrubLabel").textContent = `${k} of ${run.n}`;
   drawFloat($("resultCanvas"), frameVec(run, k), run.C, HI);
-  showAdding(run, k - 1);
+  showAdding(run, pieceAt(run, k), k);
   drawSheetMarks(run, k);
 }
 
-// The picture after k images. The builder has the true k-image fit; replays
-// only have the final weights, so partial stacks get their contrast rescaled.
+// The order pieces go in as the slider moves: the order the build picked them (default),
+// or strongest first. One setting drives the picture, the grid, playback and saving.
+const strongestFirst = (run) => !!run.sheet && $("sheetOrder").value === "strength";
+const pieceAt = (run, k) => (strongestFirst(run) ? run.sheet.byStrength[k - 1] : k - 1);
+
+// The picture after k images, as the arrays to sum: in build order the builder has the
+// true k-image fit; otherwise (replays, strongest first) the final brightnesses are used
+// and partial stacks get their contrast rescaled to the finished picture's.
+function stackAt(run, k) {
+  if (strongestFirst(run)) return { pieces: run.sheet.hiStrong, w: run.sheet.wStrong, rescale: k < run.n };
+  return { pieces: run.hi, w: run.replay ? run.wFinal : run.wHist[k - 1], rescale: run.replay && k < run.n };
+}
+
 function frameVec(run, k) {
-  const weights = run.replay ? run.wFinal : run.wHist[k - 1];
-  return renderSum(run.hi, weights, k, run.C, HI, run.tmean, { matchStd: run.replay && k < run.n ? run.finalStd : 0 });
+  const st = stackAt(run, k);
+  return renderSum(st.pieces, st.w, k, run.C, HI, run.tmean, { matchStd: st.rescale ? run.finalStd : 0 });
 }
 
 let scrubPending = false;
@@ -661,8 +672,9 @@ function buildSheet(run) {
     ctx.drawImage(tile, (r % cols) * cell + 1, Math.floor(r / cols) * cell + 1, cell - 2, cell - 2);
   });
   ctx.globalAlpha = 1;
-  run.sheet = { order, byStrength, strengthRank, cols, rows, contrib, base, cell };
-  drawSheetMarks(run, +$("scrub").value || run.n);
+  const hiStrong = byStrength.map((i) => run.hi[i]), wStrong = Float32Array.from(byStrength, (i) => run.wFinal[i]);
+  run.sheet = { order, byStrength, strengthRank, hiStrong, wStrong, cols, rows, contrib, base, cell };
+  renderAt(+$("scrub").value || run.n); // picture, "now adding" and marks in the chosen order
 }
 
 // Show which pieces are in the picture at the slider's position: those added so far get
@@ -674,7 +686,8 @@ function drawSheetMarks(run, k) {
   ctx.drawImage(sh.base, 0, 0);
   sh.order.forEach((i, r) => {
     const x = (r % sh.cols) * c, y = Math.floor(r / sh.cols) * c;
-    if (i >= k) {
+    const inPicture = strongestFirst(run) ? sh.strengthRank[i] < k : i < k;
+    if (!inPicture) {
       ctx.fillStyle = "rgba(11, 13, 18, 0.8)";
       ctx.fillRect(x + 1, y + 1, c - 2, c - 2);
     } else if (!all) {
@@ -682,7 +695,7 @@ function drawSheetMarks(run, k) {
       ctx.lineWidth = 3;
       ctx.strokeRect(x + 2.5, y + 2.5, c - 5, c - 5);
     }
-    if (i === k - 1) {
+    if (i === pieceAt(run, k)) {
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 5;
       ctx.strokeRect(x + 3.5, y + 3.5, c - 7, c - 7);
@@ -868,19 +881,19 @@ async function download() {
     // exactly what's on screen: the same number of images and the same weights (and, for a
     // replay's partial stack, the same contrast rescaling), just rendered at 512 px
     const C = run.C, RR = DL * DL, acc = new Float32Array(C * RR), off = new Float64Array(C);
-    const k = Math.max(1, Math.min(run.n, +$("scrub").value || run.n));
-    const w = run.replay ? run.wFinal : run.wHist[k - 1];
+    const k = Math.max(1, Math.min(run.n, +$("scrub").value || run.n)), st = stackAt(run, k), w = st.w;
     let gain = 1;
-    if (run.replay && k < run.n) {
-      const sd = stdOf(renderSum(run.hi, w, k, C, HI, run.tmean), C, run.tmean);
+    if (st.rescale) {
+      const sd = stdOf(renderSum(st.pieces, w, k, C, HI, run.tmean), C, run.tmean);
       if (sd > 1e-9) gain = Math.min(run.finalStd / sd, 50);
     }
-    for (let i = 0; i < k; i++) {
-      if (!w[i]) continue;
-      const p = run.pieces[i], a = atomBytes(p.src, p.x, p.y, p.s, p.o, DL, C, run.neutral), f = w[i] / 255;
+    for (let j = 0; j < k; j++) {
+      if (!w[j]) continue;
+      const p = run.pieces[strongestFirst(run) ? run.sheet.byStrength[j] : j];
+      const a = atomBytes(p.src, p.x, p.y, p.s, p.o, DL, C, run.neutral), f = w[j] / 255;
       for (let q = 0; q < acc.length; q++) acc[q] += f * a.u8[q];
-      for (let c = 0; c < C; c++) off[c] += w[i] * a.mean[c];
-      if (i % 10 === 0) { setStatus(`Rendering a ${DL} px image… ${i} of ${k}`); await nextFrame(); }
+      for (let c = 0; c < C; c++) off[c] += w[j] * a.mean[c];
+      if (j % 10 === 0) { setStatus(`Rendering a ${DL} px image… ${j} of ${k}`); await nextFrame(); }
     }
     for (let c = 0; c < C; c++) for (let p = 0; p < RR; p++) acc[c * RR + p] = (acc[c * RR + p] - off[c]) * gain + run.tmean[c];
     const cv = document.createElement("canvas");
@@ -1150,7 +1163,6 @@ async function startReplay(code) {
   setupScrub(run, 1);
   renderAt(1);
   buildSheet(run);
-  showAdding(run, 0);
   buildCredits(run);
   $("actions").hidden = false;
   $("playRow").hidden = false;
@@ -1252,11 +1264,7 @@ async function init() {
   $("scrub").addEventListener("keydown", stopPlaying);
   $("scrub").addEventListener("input", () => { stopPlaying(); scheduleRender(); });
   $("sheetOrder").addEventListener("change", () => { if (state.run?.sheet) buildSheet(state.run); });
-  $("strengthInput").addEventListener("change", () => {
-    if (!state.run?.sheet) return;
-    buildSheet(state.run);
-    showAdding(state.run, +$("scrub").value - 1);
-  });
+  $("strengthInput").addEventListener("change", () => { if (state.run?.sheet) buildSheet(state.run); });
   $("playBtn").addEventListener("click", play);
   $("downloadBtn").addEventListener("click", download);
   $("gifBtn").addEventListener("click", makeGif);

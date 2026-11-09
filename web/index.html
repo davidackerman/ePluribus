@@ -110,18 +110,18 @@
 
       <section class="card">
         <h2><span class="num">3</span> Make it</h2>
+        <label class="slider">Images to stack: <b id="kLabel">300</b>
+          <input type="range" id="kInput" min="20" max="500" step="10" value="300"></label>
+        <div class="row">
+          <label class="toggle"><input type="checkbox" id="colourInput" checked> Colour</label>
+          <label class="toggle" title="On: only the images' own colours, each image just brighter or dimmer. Off: also nudges the whole picture toward your photo's overall colour."><input type="checkbox" id="pureInput" checked> <span>Colour only from the images <span class="muted small">(no overall tint)</span></span></label>
+        </div>
         <div class="row">
           <button id="buildBtn" class="primary big" disabled>Make it!</button>
           <span id="buildHint" class="muted small">Pick a picture first.</span>
         </div>
         <details class="advanced">
           <summary>Advanced settings</summary>
-          <label class="slider">Images to stack: <b id="kLabel">300</b>
-            <input type="range" id="kInput" min="20" max="500" step="10" value="300"></label>
-          <div class="row">
-            <label class="toggle"><input type="checkbox" id="colourInput" checked> Colour</label>
-            <label class="toggle" title="On: only the images' own colours, each image just brighter or dimmer. Off: also nudges the whole picture toward your photo's overall colour."><input type="checkbox" id="pureInput" checked> <span>Colour only from the images <span class="muted small">(no overall tint)</span></span></label>
-          </div>
           <label class="select">Search through
             <select id="poolInput">
               <option value="4000">4,000 pieces (fast)</option>
@@ -160,6 +160,14 @@
           </div>
           <label class="slider" id="scrubRow" hidden>Images stacked: <b id="scrubLabel"></b>
             <input type="range" id="scrub" min="1" max="1" value="1"></label>
+          <div class="row" id="orderRow" hidden>
+            <label class="select small">Add them
+              <select id="sheetOrder">
+                <option value="added" selected>in the order they were picked</option>
+                <option value="strength">strongest first</option>
+              </select>
+            </label>
+          </div>
           <figure id="gifBox" hidden>
             <img id="gifPreview" alt="Animated GIF: every image used, then each one added into the picture, ending with what it is made of">
             <figcaption id="gifNote" class="muted small"></figcaption>
@@ -192,12 +200,6 @@
       <div id="sheetBlock" hidden>
         <h3>All the pieces <span class="muted small">Drag the slider and the ones in the picture so far light up. Tap any one to see what it adds, and where in the universe it came from.</span></h3>
         <div class="row sheetControls">
-          <label class="select small">Order
-            <select id="sheetOrder">
-              <option value="added" selected>as added (follows the slider)</option>
-              <option value="strength">strongest first</option>
-            </select>
-          </label>
           <label class="toggle small sheetToggle"><input type="checkbox" id="strengthInput"> <span>Fade each piece by how much it adds <span class="muted">(bright = a lot, faint = a little)</span></span></label>
         </div>
         <div class="sheetWrap"><canvas id="sheet"></canvas><div id="sheetTip" class="tip" hidden></div></div>
