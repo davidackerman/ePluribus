@@ -60,10 +60,25 @@ log(`coresample link: ${where}`);
 await page.locator("#pieceDialog").screenshot({ path: `${OUT}/3_dialog.png` });
 await page.keyboard.press("Escape");
 
+// ---- the all-pieces grid, faded by how much each piece adds
+await page.locator("#sheet").screenshot({ path: `${OUT}/5_sheet.png` });
+await page.check("#strengthInput");
+await page.waitForTimeout(200);
+await page.locator("#sheet").screenshot({ path: `${OUT}/5_sheet_strength.png` });
+log(`strength checkbox: ${await page.isChecked("#strengthInput")}; now-adding label: "${(await page.textContent("#addingLabel")).replace(/\s+/g, " ")}", opacity ${await page.evaluate(() => document.querySelector("#addingCanvas").style.opacity)}`);
+// the side column must not change height while scrubbing (long titles used to wrap)
+const heights = new Set();
+for (const k of [1, 5, 17, 60, 150, 299]) { await setScrub(page, k); await page.waitForTimeout(60); heights.add((await page.locator("#addingBox").boundingBox()).height); }
+log(`"Now adding" box heights while scrubbing: ${[...heights].join(", ")}`);
+await setScrub(page, "max");
+await page.uncheck("#strengthInput");
+
 // ---- GIF
 {
   const t1 = Date.now();
-  const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 120000 }), page.click("#gifBtn")]);
+  await page.click("#gifBtn");
+  await page.waitForSelector("#gifBox:not([hidden])", { timeout: 120000 });
+  const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#gifSaveBtn")]);
   await dl.saveAs(`${OUT}/builder.gif`);
   log(`GIF in ${((Date.now() - t1) / 1000).toFixed(1)}s: ${await page.textContent("#gifNote")}`);
 }

@@ -313,7 +313,7 @@ function renderOwn() {
 function updateBuildButton() {
   const hasSrc = selectedPacks().length > 0 || state.own.length > 0;
   $("buildBtn").disabled = !state.target || !hasSrc || state.busy;
-  $("buildHint").textContent = !state.target ? "Pick a face first."
+  $("buildHint").textContent = !state.target ? "Pick a picture first."
     : !hasSrc ? "Pick at least one pack."
     : state.busy ? "Building…" : "";
 }
@@ -342,13 +342,19 @@ function showStage({ replay }) {
 
 function showAdding(run, i) {
   if (i < 0 || !run.atoms64[i]) return;
-  const p = run.pieces[i];
+  const p = run.pieces[i], sheet = run.sheet;
   drawBytes($("addingCanvas"), run.atoms64[i].u8, run.C, N);
+  // once the build is done: fade it by what it actually contributed, and say how much
+  const fade = sheet && $("strengthInput").checked;
+  $("addingCanvas").style.opacity = fade ? String(Math.max(0.06, sheet.contrib[i] / (sheet.contrib[sheet.order[0]] || 1))) : "1";
   const box = $("addingLabel");
   box.replaceChildren();
   const a = document.createElement("div"), b = document.createElement("div");
-  a.textContent = `#${i + 1}: ${p.src.title}`;
-  b.textContent = `${p.s} px crop${p.o ? (p.o & 4 ? ", flipped" : ", turned") : ""}`;
+  a.className = "ell";
+  a.textContent = a.title = `#${i + 1}: ${p.src.title}`;
+  b.className = "ell";
+  const share = sheet ? ` \u00b7 adds ${((100 * sheet.contrib[i]) / sheet.contrib.reduce((x, y) => x + y, 0)).toFixed(1)}%` : "";
+  b.textContent = `${p.s} px crop${p.o ? (p.o & 4 ? ", flipped" : ", turned") : ""}${share}`;
   box.append(a, b);
 }
 
@@ -454,6 +460,7 @@ async function finishBuild(run) {
   setupScrub(run, n);
   renderAt(n);
   buildSheet(run);
+  showAdding(run, n - 1);
   buildCredits(run);
   showComposition(run);
   $("actions").hidden = false;
@@ -547,10 +554,14 @@ function buildSheet(run) {
   const ctx = cv.getContext("2d"), tile = document.createElement("canvas");
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, cv.width, cv.height);
+  // optionally fade each piece by its share of what draws the picture (strongest = opaque)
+  const byStrength = $("strengthInput").checked, cmax = contrib[order[0]] || 1;
   order.forEach((i, r) => {
     drawBytes(tile, run.atoms64[i].u8, run.C, N);
+    ctx.globalAlpha = byStrength ? Math.max(0.06, contrib[i] / cmax) : 1;
     ctx.drawImage(tile, (r % cols) * cell + 1, Math.floor(r / cols) * cell + 1, cell - 2, cell - 2);
   });
+  ctx.globalAlpha = 1;
   run.sheet = { order, cols, rows, contrib };
 }
 
@@ -612,15 +623,27 @@ function compositionText(run, max = 5) {
   return shown.join(" · ");
 }
 
+const FAMILY_COLORS = {
+  Moon: "#c9ccd6", Mars: "#ff7a59", Andromeda: "#8ab4ff", "Carina nebula": "#ff6bd6", "deep space": "#6b7cff",
+  eyes: "#ff5c5c", tissue: "#e8a87c", "glowing cells": "#4ade80", "head scans": "#a3a3a3", "your images": "#ffd24a",
+};
+
+function chip(text, color) {
+  const c = document.createElement("span"), dot = document.createElement("i");
+  c.className = "chip";
+  dot.style.setProperty("--c", color || "#888");
+  c.append(dot, text);
+  return c;
+}
+
 function showComposition(run) {
-  const el = $("composition"), items = compositionText(run).split(" \u00b7 ");
-  el.replaceChildren("Made of ");
-  items.forEach((t, j) => {
-    const span = document.createElement("span");
-    span.className = "nw";
-    span.textContent = t;
-    el.append(span, j < items.length - 1 ? " \u00b7 " : "");
-  });
+  const el = $("composition"), parts = composition(run), lead = document.createElement("span");
+  lead.className = "muted";
+  lead.textContent = "Made of";
+  el.replaceChildren(lead);
+  for (const p of parts.slice(0, 6)) el.append(" ", chip(`${p.pct}% ${p.label}`, FAMILY_COLORS[p.label]));
+  const rest = parts.slice(6).reduce((a, p) => a + p.pct, 0);
+  if (rest) el.append(" ", chip(`${rest}% other`, "#777"));
   el.hidden = false;
 }
 
@@ -767,14 +790,14 @@ async function share() {
     : `It lists only which pieces to stack and how bright (${pieces.length} images), not your photo.`;
   if (matchMedia("(pointer: coarse)").matches && navigator.share) {
     try {
-      await navigator.share({ title: "Who's hiding in here?", text: `Who's hiding in these ${run.n} science images? (${compositionText(run, 4)})`, url });
+      await navigator.share({ title: "What's hiding in here?", text: `What's hiding in these ${run.n} science images? (${compositionText(run, 4)})`, url });
       note.textContent = `Shared. ${what}`;
       return;
     } catch { /* fall back to copying */ }
   }
   try {
     await navigator.clipboard.writeText(url);
-    note.textContent = `Dare link copied${run.shortLink ? "" : ` (${url.length.toLocaleString()} characters)`}! Your friend watches it build and guesses who it is. ${what}`;
+    note.textContent = `Dare link copied${run.shortLink ? "" : ` (${url.length.toLocaleString()} characters)`}! Your friend watches it build and guesses what it is. ${what}`;
   } catch {
     note.textContent = "Couldn't copy automatically. Here's the link:";
     const ta = document.createElement("textarea");
@@ -827,7 +850,9 @@ async function makeGif() {
     const frames = [];
     const push = (delay) => frames.push({ rgba: ctx.getImageData(0, 0, W, H).data, delay });
     const bg = () => { ctx.globalAlpha = 1; ctx.fillStyle = "#0b0d12"; ctx.fillRect(0, 0, W, H); };
-    const footer = () => gifText(ctx, "ePluribus · what are you made of?", W / 2, H - 12, { size: 11, weight: 400, color: MUTED });
+    // the footer carries the site's address, so anyone who sees the GIF can find the game
+    const site = `${location.host}${location.pathname}`.replace(/\/(index\.html)?$/, "");
+    const footer = () => gifText(ctx, `what are you made of? \u00b7 ${site}`, W / 2, H - 12, { size: 11, weight: 400, color: MUTED });
     const toCanvas = (draw) => { const c = document.createElement("canvas"); draw(c); return c; };
 
     // strongest first: partial stacks use the final brightnesses, contrast-matched
@@ -892,24 +917,15 @@ async function makeGif() {
     setStatus("Encoding the GIF…");
     await nextFrame();
     const blob = new Blob([encodeGif(frames, W, H)], { type: "image/gif" });
-    const url = URL.createObjectURL(blob);
-    $("gifPreview").src = url;
+    if (run.gifUrl) URL.revokeObjectURL(run.gifUrl);
+    run.gifUrl = URL.createObjectURL(blob);
+    run.gifFile = new File([blob], "epluribus.gif", { type: "image/gif" });
+    $("gifPreview").src = run.gifUrl;
     $("gifBox").hidden = false;
-    $("gifNote").textContent = `${(blob.size / 1e6).toFixed(1)} MB, ${frames.length} frames.`;
-    const file = new File([blob], "epluribus.gif", { type: "image/gif" });
-    let shared = false;
-    if (matchMedia("(pointer: coarse)").matches && navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], text: `What are you made of? This one's ${compositionText(run, 4)}.` });
-        shared = true;
-      } catch { /* fall back to download */ }
-    }
-    if (!shared) {
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "epluribus.gif";
-      a.click();
-    }
+    // sharing a file needs a fresh tap, so it gets its own button (where the device can)
+    $("gifShareBtn").hidden = !navigator.canShare?.({ files: [run.gifFile] });
+    $("gifNote").textContent = `${(blob.size / 1e6).toFixed(1)} MB. Post it with your dare link so people can play.`;
+    $("gifBox").scrollIntoView({ behavior: "smooth", block: "nearest" });
   } finally {
     setStatus(before);
     btn.disabled = false;
@@ -918,6 +934,7 @@ async function makeGif() {
 
 /* ------------------------------------------------------------ shared links */
 async function startReplay(code) {
+  document.body.classList.add("replaying");
   $("builder").hidden = true;
   $("heroCtas").hidden = true;
   $("replayIntro").hidden = false;
@@ -991,13 +1008,14 @@ async function startReplay(code) {
   setupScrub(run, 1);
   renderAt(1);
   buildSheet(run);
+  showAdding(run, 0);
   buildCredits(run);
   $("actions").hidden = false;
   $("rawRow").hidden = false;
   $("playRow").hidden = false;
   $("guessBtn").hidden = false;
   $("playBtn").textContent = "Play";
-  setStatus("Hit play, then tap “I know who it is!” the moment you can tell.");
+  setStatus("Hit play, then tap “I got it!” the moment you recognise it.");
 }
 
 // "Guess who": the replay's game. Record how many images it took, reveal, and offer a
@@ -1022,7 +1040,7 @@ function guessNow() {
 
 async function challenge() {
   const run = state.run, url = location.href;
-  const text = `I spotted who's hiding in these ${run.n} science images after just ${run.guessedAt}. Can you beat that?`;
+  const text = `I spotted what's hiding in these ${run.n} science images after just ${run.guessedAt}. Can you beat that?`;
   if (matchMedia("(pointer: coarse)").matches && navigator.share) {
     try { await navigator.share({ text, url }); return; } catch { /* fall back to copying */ }
   }
@@ -1049,6 +1067,7 @@ async function playDemo() {
 }
 
 function linkError(msg) {
+  document.body.classList.add("replaying");
   $("builder").hidden = true;
   $("heroCtas").hidden = true;
   $("replayIntro").hidden = false;
@@ -1085,14 +1104,35 @@ async function init() {
   $("buildBtn").addEventListener("click", build);
   $("stopBtn").addEventListener("click", () => { if (state.run) state.run.cancelled = true; });
   $("scrub").addEventListener("input", () => { if (state.run) state.run.playing = false; scheduleRender(); });
+  $("strengthInput").addEventListener("change", () => {
+    if (!state.run?.sheet) return;
+    buildSheet(state.run);
+    showAdding(state.run, +$("scrub").value - 1);
+  });
   $("rawInput").addEventListener("change", () => { $("rawNote").hidden = !$("rawInput").checked; scheduleRender(); });
   $("playBtn").addEventListener("click", play);
   $("downloadBtn").addEventListener("click", download);
   $("gifBtn").addEventListener("click", makeGif);
+  $("gifSaveBtn").addEventListener("click", () => {
+    if (!state.run?.gifUrl) return;
+    const a = document.createElement("a");
+    a.href = state.run.gifUrl;
+    a.download = "epluribus.gif";
+    a.click();
+  });
+  $("gifShareBtn").addEventListener("click", async () => {
+    const run = state.run;
+    if (!run?.gifFile) return;
+    try {
+      await navigator.share({ files: [run.gifFile], text: `What are you made of? This one's ${compositionText(run, 4)}.` });
+    } catch { /* cancelled */ }
+  });
   $("shareBtn").addEventListener("click", share);
   $("makeOwnBtn").addEventListener("click", () => { location.href = location.pathname; });
   $("guessBtn").addEventListener("click", guessNow);
   $("demoBtn").addEventListener("click", playDemo);
+  $("heroArt").addEventListener("click", playDemo);
+  $("heroArt").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); playDemo(); } });
   $("challengeBtn").addEventListener("click", challenge);
   state.store = await findStore();
   const long = location.hash.match(/^#r=([A-Za-z0-9_-]+)$/), short = location.hash.match(/^#s=([A-Za-z0-9_.-]+)$/);

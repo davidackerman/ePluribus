@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ePluribus · What are you made of?</title>
-  <meta name="description" content="Turn a face into 300 real science images (Martian craters, galaxies, eyeballs) and dare your friends to guess who it is.">
-  <meta name="keywords" content="what are you made of, face made of science images, guess who game, photo mosaic, generative art, Mars, Moon, Hubble, Webb, Andromeda, galaxies, microscopy, science art">
+  <meta name="description" content="Turn any picture into 300 real science images (Martian craters, galaxies, eyeballs) and dare your friends to guess what it is.">
+  <meta name="keywords" content="what are you made of, picture made of science images, face made of science images, guess the picture game, photo mosaic, generative art, Mars, Moon, Hubble, Webb, Andromeda, galaxies, microscopy, science art">
   <meta property="og:type" content="website">
   <meta property="og:title" content="What are you made of?">
-  <meta property="og:description" content="A face, rebuilt from 300 real science images. Can you tell who it is?">
+  <meta property="og:description" content="Any picture, rebuilt from 300 real science images. Can you tell what it is?">
   <meta property="og:url" content="https://davidackerman.github.io/ePluribus/">
   <meta property="og:image" content="https://davidackerman.github.io/ePluribus/og.png">
   <meta name="twitter:card" content="summary_large_image">
@@ -19,27 +19,44 @@
 </head>
 <body>
   <header class="top">
-    <div class="brand">e<span>Pluribus</span></div>
-    <h1 class="hero">What are you made of?</h1>
-    <p class="tag">Turn a face into <b>300 real science images</b> (Martian craters, galaxies, eyeballs) stacked as light. Then dare your friends to guess who it is.</p>
-    <div class="row heroCtas" id="heroCtas">
-      <button id="demoBtn" class="primary big">Play a round</button>
-      <a href="#make" class="button secondary big">Make your own</a>
+    <div class="heroGrid">
+      <div class="heroText">
+        <div class="brand">e<span>Pluribus</span></div>
+        <h1 class="hero">What are you made of?</h1>
+        <p class="tag">Turn any picture (a face, your cat, a landmark) into <b>300 real science images</b>: Martian craters, galaxies, eyeballs, stacked as light. Then dare your friends to guess what it is.</p>
+        <div class="row heroCtas" id="heroCtas">
+          <button id="demoBtn" class="primary big">Play a round</button>
+          <a href="#make" class="button secondary big">Make your own</a>
+        </div>
+      </div>
+      <figure class="heroArt" id="heroArt" role="button" tabindex="0" aria-label="Play a round with this picture">
+        <img class="heroFace" src="samples/demo-face.jpg" width="480" height="480" alt="A famous face, rebuilt from 300 science images">
+        <div class="heroEq"><span>=</span><img src="samples/demo-pieces.png" width="434" height="64" alt="Some of the science images it is made of"><span>&hellip;</span></div>
+        <figcaption>
+          <span class="chips">
+            <span class="chip"><i style="--c:#e8a87c"></i>37% tissue</span>
+            <span class="chip"><i style="--c:#c9ccd6"></i>26% Moon</span>
+            <span class="chip"><i style="--c:#8ab4ff"></i>13% Andromeda</span>
+            <span class="chip"><i style="--c:#ff7a59"></i>13% Mars</span>
+            <span class="chip"><i style="--c:#ff5c5c"></i>11% eyes</span>
+          </span>
+          <span class="muted small heroHint">Who is it? Tap to play.</span>
+        </figcaption>
+      </figure>
     </div>
   </header>
 
   <main>
     <!-- shown when opening a shared link (or playing the demo) -->
     <section id="replayIntro" class="card" hidden>
-      <h2>Who's hiding in here?</h2>
-      <p>Someone turned a face into <b id="replayCount"></b> science images. Hit play, then tap <b>I know who it is!</b> the second you recognise them. Fewer images, bigger bragging rights.</p>
-      <p class="muted small">The link only says which pieces of public science images to stack, and how bright. The original photo isn't in it and was never uploaded anywhere.</p>
-      <button id="makeOwnBtn" class="secondary">Make your own</button>
+      <h2>What's hiding in here?</h2>
+      <p>Someone turned a picture into <b id="replayCount"></b> science images. Spot it with as few as you can.</p>
+      <p class="muted small replayFine">No photo in this link: just which public pieces to stack, and how bright. <button id="makeOwnBtn" class="secondary small">Make your own</button></p>
     </section>
 
     <div id="builder">
       <section class="card" id="make">
-        <h2><span class="num">1</span> Pick a face</h2>
+        <h2><span class="num">1</span> Pick a picture</h2>
         <div class="row">
           <label class="button primary">Upload a photo<input type="file" id="fileInput" accept="image/*" hidden></label>
           <button class="secondary" data-sample="mona">Mona Lisa</button>
@@ -47,7 +64,7 @@
           <button class="secondary" data-sample="cat">Cat</button>
         </div>
         <div id="cropArea" hidden>
-          <p class="muted small">Drag the square onto the face. Tight crops work best.</p>
+          <p class="muted small">Faces, pets, landmarks, logos: anything works. Drag the square onto the part you want; bold, tight crops work best.</p>
           <div class="cropWrap"><canvas id="cropCanvas"></canvas></div>
           <label class="slider">Square size <input type="range" id="cropSize" min="8" max="100" value="60"></label>
           <div class="previewRow">
@@ -84,7 +101,7 @@
         </div>
         <div class="row">
           <button id="buildBtn" class="primary big" disabled>Make it!</button>
-          <span id="buildHint" class="muted small">Pick a face first.</span>
+          <span id="buildHint" class="muted small">Pick a picture first.</span>
         </div>
       </section>
     </div>
@@ -98,7 +115,7 @@
           <p id="composition" class="composition" hidden></p>
           <div class="row" id="playRow" hidden>
             <button id="playBtn" class="primary">Play</button>
-            <button id="guessBtn" class="secondary" hidden>I know who it is!</button>
+            <button id="guessBtn" class="secondary" hidden>I got it!</button>
           </div>
           <div id="guessNote" class="guessNote" hidden>
             <b id="guessText"></b>
@@ -110,8 +127,12 @@
           <figure id="gifBox" hidden>
             <img id="gifPreview" alt="Animated GIF: every science image used, then each one added into the picture, ending with what it is made of">
             <figcaption id="gifNote" class="muted small"></figcaption>
+            <div class="row">
+              <button id="gifShareBtn" class="primary small" hidden>Share GIF</button>
+              <button id="gifSaveBtn" class="secondary small">Download GIF</button>
+            </div>
           </figure>
-          <p id="rawNote" class="muted small" hidden>This is what stacked light really looks like: a bright glow with the face as a faint ripple on top. One black-level setting, the same for every pixel, removes the glow.</p>
+          <p id="rawNote" class="muted small" hidden>This is what stacked light really looks like: a bright glow with the picture as a faint ripple on top. One black-level setting, the same for every pixel, removes the glow.</p>
         </div>
         <aside class="sideCol">
           <div id="addingBox">
@@ -135,13 +156,14 @@
 
       <div id="sheetBlock" hidden>
         <h3>All the pieces <span class="muted small">strongest first. Tap any one to see what it adds, and where in the universe it came from.</span></h3>
+        <label class="toggle small sheetToggle"><input type="checkbox" id="strengthInput"> <span>Fade each piece by how much it adds <span class="muted">(bright = a lot, faint = a little)</span></span></label>
         <div class="sheetWrap"><canvas id="sheet"></canvas><div id="sheetTip" class="tip" hidden></div></div>
       </div>
 
       <details class="how">
         <summary>Wait, how does this work?</summary>
         <p>Every piece is a square crop of a real science image, stretched to cover the <em>whole</em> frame. The computer adds them one at a time, always picking the crop whose pattern of light and dark best fills in what's still missing, then re-tunes the brightness of every piece so far.</p>
-        <p>Pieces can only add light, never take it away, like hundreds of slide projectors pointed at one screen. So the stack is a bright glow with the face as a faint ripple on top. One black-level setting, the same for every pixel, removes the glow.</p>
+        <p>Pieces can only add light, never take it away, like hundreds of slide projectors pointed at one screen. So the stack is a bright glow with the picture as a faint ripple on top. One black-level setting, the same for every pixel, removes the glow.</p>
         <p>One brightness per image. No masks, no per-pixel tricks: just whole images, added up. "32% Moon" is each source's share of the brightness &times; contrast that draws the picture.</p>
       </details>
       <details class="credits">
@@ -154,7 +176,7 @@
   <dialog id="pieceDialog" aria-labelledby="dlgTitle">
     <div class="dlgHead"><b id="dlgTitle"></b><button id="dlgClose" class="secondary small" aria-label="Close">&times;</button></div>
     <div class="dlgGrid">
-      <figure><canvas id="dlgPiece" width="256" height="256"></canvas><figcaption>This piece (the whole frame)</figcaption></figure>
+      <figure><canvas id="dlgPiece" width="256" height="256"></canvas><figcaption>This piece</figcaption></figure>
       <figure><canvas id="dlgPicture" width="256" height="256"></canvas><figcaption id="dlgPictureCap">The whole picture</figcaption></figure>
     </div>
     <p id="dlgInfo" class="small"></p>
@@ -167,6 +189,9 @@
     </div>
   </dialog>
 
-  <footer class="muted small">Your photo never leaves your device. Science images from NASA, ESA, Esri/Murray Lab and scikit-image's sample data (credits under each picture).</footer>
+  <footer class="muted small">
+    <p>Your photo never leaves your device. Science images from NASA, ESA, Esri/Murray Lab and scikit-image's sample data (credits under each picture).</p>
+    <p><a href="https://github.com/davidackerman/ePluribus">Open source on GitHub</a> &middot; map pieces open in <a href="https://davidackerman.github.io/coresample/">coresample</a></p>
+  </footer>
 </body>
 </html>

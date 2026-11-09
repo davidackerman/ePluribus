@@ -2,17 +2,18 @@
 
 **[Play it: davidackerman.github.io/ePluribus](https://davidackerman.github.io/ePluribus/)**
 
-[![What are you made of? A face rebuilt from 300 real science images](web/og.png)](https://davidackerman.github.io/ePluribus/)
+[![What are you made of? A picture rebuilt from 300 real science images](web/og.png)](https://davidackerman.github.io/ePluribus/)
 
-Turn a face into **300 real science images** (Martian craters, galaxies, retinas, stained
-cells) stacked as light, then dare your friends to guess who it is.
+Turn any picture (a face, a pet, a landmark) into **300 real science images** (Martian
+craters, galaxies, retinas, stained cells) stacked as light, then dare your friends to guess
+what it is.
 
-- **Make one:** pick a face, pick your universe (live maps of the Moon and Mars, Hubble's
+- **Make one:** pick a picture, pick your universe (live maps of the Moon and Mars, Hubble's
   Andromeda, Webb's Carina nebula, microscopy...), watch it assemble. You get a breakdown
   like *"37% tissue · 26% Moon · 13% Andromeda · 13% Mars · 11% eyes"*.
 - **Dare a friend:** a short link replays the build from the strongest piece; they tap
-  *I know who it is!* and get a score to beat. Or play the built-in round (a famous face).
-- **Explore:** tap any of the 300 pieces to see what it adds - and, for map pieces, visit the
+  *I got it!* and get a score to beat. Or play the built-in round (a famous face).
+- **Explore:** fade the 300 pieces by how much each one adds, or tap any of them to see what it adds - and, for map pieces, visit the
   exact spot on Mars or the Moon in [coresample](https://davidackerman.github.io/coresample/).
 - **Share:** a GIF of the whole thing, a 512 px image, link previews.
 - **Private by design:** everything runs in the browser; the photo is never uploaded, and
