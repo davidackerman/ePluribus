@@ -1,32 +1,43 @@
 # ePluribus: what are you made of?
 
-**[Play it: davidackerman.github.io/ePluribus](https://davidackerman.github.io/ePluribus/)**
+**[Play it free in your browser: davidackerman.github.io/ePluribus](https://davidackerman.github.io/ePluribus/)**
 
 [![What are you made of? A picture rebuilt from 300 real images](web/og.png)](https://davidackerman.github.io/ePluribus/)
 
-Turn any picture (a face, a pet, a landmark) into **300 real images** (Martian craters,
-galaxies, retinas, stained cells, Van Gogh) stacked as light, then dare your friends to guess
-what it is.
+ePluribus is a free online **photo mosaic maker** with a twist: it rebuilds any picture (a
+face, a pet, a landmark) from **300 real images** - craters on Mars and the Moon, galaxies and
+nebulae, retinas and stained cells, Earth from orbit, and paintings like Van Gogh's *Starry
+Night*. Unlike a regular photomosaic, every image covers the *whole* picture: they're stacked
+like light from 300 slide projectors. Then share it and see if your friends can guess what it is.
 
-- **Make one:** pick a picture, pick your universe (18 packs in five tabs - space, planets,
-  Earth & nature, life & medicine, art - from live maps of the Moon and Mars to Van Gogh and
-  Haeckel's sea creatures, all on by default), watch it assemble. You get a breakdown
-  like *"37% tissue · 26% Moon · 13% Andromeda · 13% Mars · 11% eyes"*.
-- **Dare a friend:** a short link replays the build from the strongest piece; they tap
-  *I got it!* and get a score to beat. Or play the built-in round (a famous face).
-- **Explore:** fade the 300 pieces by how much each one adds, or tap any of them to see what it adds - and, for map pieces, visit the
-  exact spot on Mars or the Moon in [coresample](https://davidackerman.github.io/coresample/).
-- **Share:** a GIF of the whole thing, a 512 px image, link previews.
-- **Private by design:** everything runs in the browser; the photo is never uploaded, and
-  share links carry only which public pieces to stack (encrypted, for short links).
+- **Make one:** pick a picture, then pick your universe - 18 packs in five tabs (space,
+  planets, Earth & nature, life & medicine, art), all on by default. Watch it assemble and get
+  a breakdown like *"37% tissue · 26% Moon · 13% Andromeda · 13% Mars · 11% eyes"*.
+- **Share it:** a share link replays the build image by image; your friend taps *I got it!*
+  the moment they recognise it, and can share their score back. There's also a built-in round
+  to try (a famous face).
+- **Explore:** fade all the pieces by how much each one adds, or tap any piece to see it full
+  size, the picture without it, and - for map pieces - the exact spot on Mars or the Moon in
+  [coresample](https://davidackerman.github.io/coresample/).
+- **Save and post:** an animated GIF (Share GIF / Download GIF), a 512 px image, and link
+  previews for chats and social media.
+- **Private by design:** everything runs in your browser. Your photo is never uploaded; share
+  links carry only which public pieces to stack.
 
-How it works: every piece is a square crop of a real image stretched to cover the *whole*
-frame. Pieces are chosen greedily (non-negative matching pursuit): each step adds the crop
-that best fills in what's still missing, then re-solves every piece's brightness (weights
->= 0, like slide projectors on one screen). One black level per colour channel removes the
-resulting glow. Each piece has a single brightness for the whole image - no masks.
+## How it works
 
-## Run the web app
+Every piece is a square crop of a real image, stretched to cover the whole frame. Pieces are
+chosen greedily (non-negative matching pursuit) from thousands of random candidates: each step
+adds the crop whose pattern of light and dark best fills in what's still missing, then
+re-solves every piece's brightness (weights >= 0, like slide projectors on one screen). One
+black level per colour channel removes the resulting glow. Each piece has a single brightness
+for the whole image - no masks, no per-pixel tricks. "37% Moon" is each source's share of
+brightness x contrast.
+
+The fit runs at 64 x 64 in parallel web workers (about 15 seconds for 300 images, including
+downloads); the chosen crops are then re-cut at 256 px for display and 512 px for saving.
+
+## Run it locally
 
 ```sh
 python3 -m http.server 8765 --directory web
@@ -34,80 +45,82 @@ python3 -m http.server 8765 --directory web
 ```
 
 It must be served over HTTP (module scripts and workers don't load from `file://`).
-Everything runs in the browser: the photo is never uploaded.
 
 ## Image packs
 
-`tools/make_packs.py` builds `web/packs/` (18 packs, ~7.6 MB): scikit-image's science samples,
-the live maps below, and 64 images from Wikimedia Commons listed in `tools/commons_picks.json`
-(paintings, science illustration, patterns, Earth from orbit, landscapes, oceans, planets,
-nebulae). The Commons picks were reviewed by eye (safe for work, no duplicates or charts), and
-the builder re-checks at build time that every one is still public domain or CC0. Each build
-uses up to 4 random images per pack, so builds differ and downloads stay small.
+`tools/make_packs.py` builds `web/packs/` (18 packs, about 7.6 MB) from three kinds of source:
 
-## Live maps
+- **scikit-image's science samples:** Hubble deep field, Moon, retina, cornea, tissue stains,
+  fluorescent cells, head scans.
+- **64 images from Wikimedia Commons**, listed in `tools/commons_picks.json`: famous
+  paintings, science illustration (Haeckel, Audubon), patterns (William Morris, ornament),
+  Earth from orbit, landscapes, oceans, planets, nebulae. They were reviewed by eye (safe for
+  work; no duplicates, charts or photos of people), and the builder re-checks at build time
+  that every one is still public domain or CC0.
+- **Live maps** (below).
 
-Besides the bundled images, packs can be *live maps*: huge public image pyramids read tile by
-tile from their hosts, as in [coresample](https://github.com/davidackerman/coresample)
-(Moon LRO WAC mosaic via NASA Trek, Mars CTX mosaic via Esri, Hubble's Andromeda and Webb's
-Carina via ESA's Zoomify archives). Each build fetches ~320 random tiles (random zoom, random
-place; roughly 10-20 MB), turns each tile into a small source image, and cuts full-frame crops
-from them - so every build uses different pieces, at every scale. Map specs live in
-`tools/make_packs.py` (`MAPS`), and the readers in `web/maps.js`.
+Each build uses up to 4 random images per pack, so no two builds are alike and downloads stay
+small. Image and map ids in `packs.json` are part of the share-link format: never renumber
+them, only append.
 
-Privacy: tiles are picked at random, independent of the photo, and the final render uses the
-tiles already in memory, so the hosts never learn which pieces were chosen. A friend opening
-a share link must fetch the exact tiles it uses; their browser also fetches as many random
-decoy tiles from each map, so a host's logs don't show only the picture's tiles.
+### Live maps
+
+Some packs are huge public image pyramids read tile by tile from their hosts, as in
+[coresample](https://github.com/davidackerman/coresample): the Moon (LRO WAC mosaic via NASA
+Trek), Mars (CTX mosaic via Esri), Hubble's Andromeda and Webb's Carina nebula (ESA's Zoomify
+archives). Each build fetches about 320 random tiles (random zoom, random place; roughly
+10-20 MB), skips blank and no-data tiles, and cuts full-frame crops from them - so every build
+uses different pieces, at every scale. Map specs are in `tools/make_packs.py` (`MAPS`); the
+readers are in `web/maps.js`.
 
 ## Sharing and privacy
 
-A share link holds a *recipe*, not the photo: for each piece, which public image,
-crop position/size, rotation, and brightness, plus the average colour (see
-`encodeRecipe` in `web/core.js`). It lives after the `#`, which browsers don't send
-to the server. Anyone with the link can rebuild the (blurry) picture - that's what
-sharing means. Pictures made with the user's own source images can't be shared,
-because the recipient doesn't have those images.
-
-Share-link format: image ids in `web/packs/packs.json` are part of it, so never
-renumber them - only append new images.
-
-## Sharing, the GIF and the games
-
-- **Short links** (`web/share.js`): the recipe is encrypted in the browser (AES-GCM, a fresh
-  key per picture) and stored under a random id; the key rides in the link's `#fragment`,
-  which browsers never send to servers, so the store can't read or rebuild any picture.
-  Links look like `…/#s=k__Xww9g.Dv_IMHhnLLEA-QB2wKqsaA` (~56 characters). Without a store,
-  links carry the whole recipe (`#r=…`, ~7,000 characters).
+- **What a link holds:** a *recipe*, not the photo - for each piece, which public image (or
+  map tile), crop position, size, rotation and brightness, plus the average colour (see
+  `encodeRecipe` in `web/core.js`). It lives after the `#`, which browsers don't send to the
+  server. Anyone with the link can rebuild the (blurry) picture; that's what sharing means.
+  Pictures made with your own source images can't be shared as links.
+- **Link length:** a full link (`#r=...`) is about 7,000 characters. **Short links**
+  (`#s=...`, about 56 characters) need a small store: the recipe is encrypted in the browser
+  (AES-GCM, a fresh key per picture) and the key stays in the `#fragment`, so the store can't
+  read any picture. The live site has no store yet, so it shares full links.
   - Store contract: `POST {store}/s` with the bytes (<= 64 KB) -> `{"id": "..."}`;
     `GET {store}/s/{id}` -> the bytes; CORS open. Set its URL in `web/config.js`.
   - Development store: `python tests/short_link_store.py` (port 8799, in memory); on
     localhost the page finds it by itself.
-- **GIF** (360 x 440, ~1.2 MB): every image in a grid (strongest first, weak ones faint),
-  then each added in turn - flashing over the picture, with the latest few in a strip - and
-  a closing line of what the picture is made of ("32% Moon · 27% Mars · 25% tissue ...", by
-  each family's share of brightness x contrast). Phones get the share sheet.
-- **Every image, up close:** click any piece in the sheet: the full frame, its share of the
-  picture, "show the picture without it", and for map pieces a link to that exact spot in
-  [coresample](https://davidackerman.github.io/coresample/). Arrow keys step through them.
-- **Guess who:** a shared link plays the build from the strongest image; "I know who it
-  is!" records after how many images you could tell, and "Challenge a friend" passes it on.
+- **Map hosts:** tiles are picked at random, independent of the photo, and the final render
+  uses tiles already in memory, so the hosts never learn which pieces were chosen. A friend
+  opening a link must fetch its exact tiles; their browser also fetches as many random decoy
+  tiles, so a host's logs don't show only the picture's tiles.
+
+## The GIF
+
+360 x 440, about 1.2 MB: every image in a grid (strongest first, weak ones faint), then each
+added in turn - flashing over the picture, with the latest few in a strip - ending on the
+picture and its mix ("32% Moon · 27% Mars · ..."). Every frame carries the site's address.
+Share GIF appears where the device can share files; Download GIF works everywhere.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `web/core.js` | All the maths (resampling, candidate pool, scoring, weight solver, rendering, recipes). No DOM. |
+| `web/index.html`, `app.js`, `style.css` | The page. |
+| `web/core.js` | The maths: resampling, candidate pool, scoring, weight solver, rendering, recipes. No DOM. |
 | `web/worker.js` | Scoring worker: holds a slice of the candidate pool. |
-| `web/share.js`, `web/config.js` | Short encrypted share links; deployment settings. |
 | `web/maps.js` | Live-map readers (web-map tiles, Zoomify): random tiles, decoys. |
-| `web/gif.js` | Small animated-GIF encoder (median-cut palette + LZW) for "Make a GIF". |
-| `web/app.js`, `index.html`, `style.css` | The page. |
-| `web/packs/` | Source images + `packs.json` (built by `tools/make_packs.py`). |
-| `tools/make_packs.py` | Builds the packs from scikit-image sample data. |
-| `tests/core_test.mjs` | Node test: fit quality vs the Python prototype, recipe round trip. |
-| `tests/e2e.mjs` | Browser test (Playwright + system Chrome): build, share, replay. |
-| `experiments/` | Python prototypes, GIF animation, colour and puzzle tests. |
+| `web/share.js`, `web/config.js` | Short encrypted share links; deployment settings. |
+| `web/gif.js` | Small animated-GIF encoder (median-cut palette + LZW). |
+| `web/packs/` | Pack images, thumbnails and `packs.json` (built by `tools/make_packs.py`). |
+| `web/samples/` | Sample pictures (Mona Lisa, astronaut, cat), the demo round's recipe and hero images. |
+| `web/og.png` | Link-preview image. |
+| `tools/make_packs.py` | Builds the packs: scikit-image samples, Wikimedia Commons picks, map thumbnails. |
+| `tools/commons_picks.json` | The reviewed Wikimedia Commons images (append only). |
+| `tools/make_demo.mjs` | Rebuilds the "Play a round" demo in the real app (needs Playwright). |
+| `tests/core_test.mjs`, `tests/dump_raw.py` | Node test: fit quality vs the Python prototype, recipe round trip. |
+| `tests/e2e.mjs` | Browser test (Playwright + system Chrome): build, share, replay, GIF, demo, phone layout. |
+| `tests/short_link_store.py` | Development short-link store. |
+| `.github/workflows/pages.yml` | Publishes `web/` to GitHub Pages. |
+| `experiments/` | Python prototypes: full-frame fits, colour, animation and puzzle tests. |
 | `superpose.py`, `collage.py`, `anim_*.py` | The original prototype scripts. |
 
 ## Tests
@@ -117,30 +130,26 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python tests/dump_raw.py /tmp/ep_raw
 node tests/core_test.mjs /tmp/ep_raw 3 10000 300
 
-# browser test (needs Google Chrome, the site server and, for short links,
-# python tests/short_link_store.py running)
+# browser test (needs Google Chrome and the site server; for short links,
+# python tests/short_link_store.py too). Uses the network for the live maps.
 npm install --no-save playwright-core@1.56.1
 node tests/e2e.mjs http://127.0.0.1:8765/ /tmp/ep_shots
 ```
 
-## Publishing (GitHub Pages)
+## Publishing
 
-`.github/workflows/pages.yml` pushes `web/` to the `gh-pages` branch on every change to
-`web/` (as coresample does). To go live at https://davidackerman.github.io/ePluribus/:
+The site is live at https://davidackerman.github.io/ePluribus/. `.github/workflows/pages.yml`
+pushes `web/` to the `gh-pages` branch whenever `web/` changes (as coresample does), and
+GitHub Pages serves that branch.
 
-```sh
-gh repo edit davidackerman/ePluribus --visibility public --accept-visibility-change-consequences
-gh api -X POST repos/davidackerman/ePluribus/pages -f "source[branch]=gh-pages" -f "source[path]=/"
-```
+## Credits and licences
 
-Without a short-link store (`web/config.js`), the live site shares full-recipe links.
-
-## Before publishing
-
-- Check the licence of every bundled image and live map. The bundled images' `credit`
-  fields come from scikit-image's docstrings. NASA images are generally public domain;
-  ESA/Hubble and ESA/Webb images are CC BY 4.0 (credit required); check the Murray Lab/Esri
-  terms for the Mars mosaic (the Murray Lab grants free use for all purposes with the credit
-  "NASA/JPL/MSSS/The Murray Lab").
-- Host it somewhere static (e.g. GitHub Pages). Short links also need a small store (see
-  above); everything else is static.
+- **scikit-image sample data:** each image's credit is in `web/packs/packs.json`, from
+  scikit-image's documentation.
+- **NASA** images (Moon map, astronaut photo, Earth from orbit, planets): public domain.
+- **ESA/Hubble and ESA/Webb** (Andromeda, Carina nebula): CC BY 4.0, credited in the app.
+- **Mars CTX mosaic:** free for all uses with the credit "NASA/JPL/MSSS/The Murray Lab".
+- **Wikimedia Commons picks:** public domain or CC0; each credit (artist, title, source page)
+  is in `packs.json` and shown under every picture made with it.
+- **Samples:** Mona Lisa (public domain), the astronaut (NASA, public domain), the cat
+  (scikit-image, CC0).

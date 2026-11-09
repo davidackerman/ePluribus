@@ -838,7 +838,7 @@ async function share() {
   }
   try {
     await navigator.clipboard.writeText(url);
-    note.textContent = `Dare link copied${run.shortLink ? "" : ` (${url.length.toLocaleString()} characters)`}! Your friend watches it build and guesses what it is. ${what}`;
+    note.textContent = `Link copied${run.shortLink ? "" : ` (${url.length.toLocaleString()} characters)`}! Your friend watches it build and guesses what it is. ${what}`;
   } catch {
     note.textContent = "Couldn't copy automatically. Here's the link:";
     const ta = document.createElement("textarea");
@@ -965,7 +965,7 @@ async function makeGif() {
     $("gifBox").hidden = false;
     // sharing a file needs a fresh tap, so it gets its own button (where the device can)
     $("gifShareBtn").hidden = !navigator.canShare?.({ files: [run.gifFile] });
-    $("gifNote").textContent = `${(blob.size / 1e6).toFixed(1)} MB. Post it with your dare link so people can play.`;
+    $("gifNote").textContent = `${(blob.size / 1e6).toFixed(1)} MB. Post it with your share link so people can play.`;
     $("gifBox").scrollIntoView({ behavior: "smooth", block: "nearest" });
   } finally {
     setStatus(before);
@@ -1087,7 +1087,7 @@ async function challenge() {
   }
   try {
     await navigator.clipboard.writeText(`${text} ${url}`);
-    $("guessText").textContent = `Challenge copied! (Your score: ${run.guessedAt}.) Paste it to a friend.`;
+    $("guessText").textContent = `Copied! (Your score: ${run.guessedAt}.) Paste it to a friend.`;
   } catch {
     $("guessText").textContent = `${text} ${url}`;
   }

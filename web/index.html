@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ePluribus · What are you made of?</title>
-  <meta name="description" content="Turn any picture into 300 real images (Martian craters, galaxies, eyeballs, Van Gogh) and dare your friends to guess what it is.">
-  <meta name="keywords" content="what are you made of, picture made of science images, face made of science images, guess the picture game, photo mosaic, generative art, science art, public domain art, NASA images, Mars, Moon, Hubble, Webb, Andromeda, galaxies, microscopy, science art">
+  <title>ePluribus: what are you made of? Free photo mosaic maker from 300 real space, science and art images</title>
+  <meta name="description" content="Free online photo mosaic maker: turn any picture into 300 real images of Mars, galaxies, cells and famous paintings. Watch it build, then share it and see if your friends can guess what it is.">
+  <link rel="canonical" href="https://davidackerman.github.io/ePluribus/">
+  <meta name="keywords" content="photo mosaic maker, photomosaic generator, picture made of pictures, image made of images, mosaic from space images, what are you made of, picture made of science images, face made of science images, guess the picture game, photo mosaic, generative art, science art, public domain art, NASA images, Mars, Moon, Hubble, Webb, Andromeda, galaxies, microscopy, science art">
   <meta property="og:type" content="website">
   <meta property="og:title" content="What are you made of?">
   <meta property="og:description" content="Any picture, rebuilt from 300 real images of space, life and art. Can you tell what it is?">
@@ -14,6 +15,23 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0b0d12">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='12' cy='13' r='9' fill='%23ffb86b' fill-opacity='.7'/%3E%3Ccircle cx='20' cy='13' r='9' fill='%238ab4ff' fill-opacity='.7'/%3E%3Ccircle cx='16' cy='20' r='9' fill='%23ff6bd6' fill-opacity='.7'/%3E%3C/svg%3E">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "ePluribus",
+    "alternateName": "What are you made of?",
+    "url": "https://davidackerman.github.io/ePluribus/",
+    "image": "https://davidackerman.github.io/ePluribus/og.png",
+    "description": "A free photo mosaic maker that rebuilds any picture from 300 real images of Mars, the Moon, galaxies, cells and famous paintings, then turns it into a guessing game to share.",
+    "applicationCategory": "MultimediaApplication",
+    "genre": "Photo mosaic, generative art, guessing game",
+    "operatingSystem": "Any (runs in the browser)",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "codeRepository": "https://github.com/davidackerman/ePluribus"
+  }
+  </script>
   <link rel="stylesheet" href="style.css">
   <script type="module" src="app.js"></script>
 </head>
@@ -23,7 +41,7 @@
       <div class="heroText">
         <div class="brand">e<span>Pluribus</span></div>
         <h1 class="hero">What are you made of?</h1>
-        <p class="tag">Turn any picture (a face, your cat, a landmark) into <b>300 real images</b>: Martian craters, galaxies, eyeballs, Van Gogh, stacked as light. Then dare your friends to guess what it is.</p>
+        <p class="tag">Turn any picture (a face, your cat, a landmark) into <b>300 real images</b>: Martian craters, galaxies, eyeballs, Van Gogh, stacked as light. Then share it and see if your friends can guess what it is.</p>
         <div class="row heroCtas" id="heroCtas">
           <button id="demoBtn" class="primary big">Play a round</button>
           <a href="#make" class="button secondary big">Make your own</a>
@@ -123,7 +141,7 @@
           </div>
           <div id="guessNote" class="guessNote" hidden>
             <b id="guessText"></b>
-            <button id="challengeBtn" class="primary">Challenge a friend</button>
+            <button id="challengeBtn" class="primary">Share your score</button>
           </div>
           <label class="slider" id="scrubRow" hidden>Images stacked: <b id="scrubLabel"></b>
             <input type="range" id="scrub" min="1" max="1" value="1"></label>
@@ -150,7 +168,7 @@
           </div>
           <div class="actions" id="actions" hidden>
             <div class="muted small">Share it</div>
-            <button id="shareBtn" class="primary">Dare a friend</button>
+            <button id="shareBtn" class="primary">Share link</button>
             <button id="gifBtn" class="secondary">Make a GIF</button>
             <button id="downloadBtn" class="secondary">Save image</button>
             <p id="shareNote" class="muted small"></p>
@@ -194,6 +212,7 @@
   </dialog>
 
   <footer class="muted small">
+    <p><b>About:</b> ePluribus is a free photo mosaic maker with a twist. Instead of tiling small photos, it stacks 300 whole images (Mars and Moon maps, Hubble and Webb galaxies and nebulae, microscope slides, Earth from orbit, public-domain paintings) like light from slide projectors until they add up to your picture. It runs entirely in your browser.</p>
     <p>Your photo never leaves your device. Images from NASA, ESA, Esri/Murray Lab, scikit-image's sample data and public-domain works on Wikimedia Commons (credits under each picture).</p>
     <p><a href="https://github.com/davidackerman/ePluribus">Open source on GitHub</a> &middot; map pieces open in <a href="https://davidackerman.github.io/coresample/">coresample</a></p>
   </footer>
