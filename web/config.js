@@ -6,6 +6,8 @@
 // development store from tests/short_link_store.py.
 export const SHORT_LINK_STORE = "";
 
-// GOATCOUNTER: your GoatCounter site code (the "xyz" in xyz.goatcounter.com) to count visits
-// and button presses anonymously (see stats.js). Empty: no counting at all.
-export const GOATCOUNTER = "";
+// GOATCOUNTER: the GoatCounter site code (the "xyz" in xyz.goatcounter.com) to count visits
+// and button presses anonymously (see stats.js). Empty: no counting at all. The
+// "davidackerman" site is shared by several projects: pages are told apart by path
+// (/ePluribus/...), and this project's events are named "epluribus/...".
+export const GOATCOUNTER = "davidackerman";

@@ -93,7 +93,8 @@ readers are in `web/maps.js`.
     `GET {store}/s/{id}` -> the bytes; CORS open. Set its URL in `web/config.js`.
   - Development store: `python tests/short_link_store.py` (port 8799, in memory); on
     localhost the page finds it by itself.
-- **Counting (optional):** set `GOATCOUNTER` in `web/config.js` to count visits and events
+- **Counting:** `GOATCOUNTER` in `web/config.js` (currently `davidackerman`, shared with other
+  projects; this one's events are named `epluribus/...`) counts visits and events
   (picture made, link shared/opened, GIF made, image saved, demo played, guessed) with
   [GoatCounter](https://www.goatcounter.com/): no cookies, no personal data. It sends only the
   page path, never the `#` part where recipes live (`web/stats.js`).

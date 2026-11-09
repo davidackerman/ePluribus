@@ -22,8 +22,9 @@ export function startStats() {
   return true;
 }
 
+// events are namespaced, since the GoatCounter site may be shared with other projects
 function send(name) {
-  window.goatcounter?.count?.({ path: name, title: name, event: true });
+  window.goatcounter?.count?.({ path: `epluribus/${name}`, title: `ePluribus: ${name.replace(/-/g, " ")}`, event: true });
 }
 
 /** Counts one event by name, e.g. track("picture-made"). */
