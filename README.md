@@ -1,5 +1,9 @@
 # ePluribus: what are you made of?
 
+**[Play it: davidackerman.github.io/ePluribus](https://davidackerman.github.io/ePluribus/)**
+
+[![What are you made of? A face rebuilt from 300 real science images](web/og.png)](https://davidackerman.github.io/ePluribus/)
+
 Turn a face into **300 real science images** (Martian craters, galaxies, retinas, stained
 cells) stacked as light, then dare your friends to guess who it is.
 
