@@ -423,18 +423,23 @@ export function toRGBA(vec, C, R, out = new Uint8ClampedArray(R * R * 4), scale 
 /* ------------------------------------------------------------ share recipes */
 // Binary, little-endian:
 //   u8 version | u8 flags (bit 0: colour, bit 1: neutral black level) | u16 count | f32 tmean[C] | count x piece
-//   version 2 piece: u8 image or map id, u8 zoom, u16 tile x, u16 tile y,
-//                    u16 x, u16 y, u16 size, u8 orient, f32 weight
-//     (for a plain image, zoom and tile are 0 and x, y, size are in the image;
-//      for a map, x, y, size are inside tile (zoom, tile x, tile y))
+//   version 3 piece: u8 image or map id, u8 zoom, u16 tile x, u16 tile y,
+//                    u16 x, u16 y, u16 size, u8 orient (bit 3: an item follows), f32 weight, [u32 item]
+//     (for a plain image, zoom and tile are 0 and x, y, size are in the image; for a map,
+//      x, y, size are inside tile (zoom, tile x, tile y); a live set - many images under one
+//      id - also names which of its images (low byte of item) and anything else its tiles
+//      need (the rest); single images and maps leave item out)
+//   version 2 piece: as version 3, never an item
 //   version 1 piece: u8 image id, u16 x, u16 y, u16 size, u8 orient, f32 weight
 // Holds only which crops of the public images were used and how bright -
 // never the photo itself.
-export const RECIPE_VERSION = 2;
-const PIECE_BYTES = { 1: 12, 2: 17 };
+export const RECIPE_VERSION = 3;
+const PIECE_BYTES = { 1: 12, 2: 17, 3: 17 };
+const HAS_ITEM = 8;
 
 export function encodeRecipe({ C, tmean, pieces, neutral = false }) {
-  const buf = new ArrayBuffer(4 + 4 * C + PIECE_BYTES[2] * pieces.length), dv = new DataView(buf);
+  const size = pieces.reduce((n, p) => n + PIECE_BYTES[3] + (p.item ? 4 : 0), 4 + 4 * C);
+  const buf = new ArrayBuffer(size), dv = new DataView(buf);
   dv.setUint8(0, RECIPE_VERSION);
   dv.setUint8(1, (C === 3 ? 1 : 0) | (neutral ? 2 : 0));
   dv.setUint16(2, pieces.length, true);
@@ -443,8 +448,9 @@ export function encodeRecipe({ C, tmean, pieces, neutral = false }) {
   for (const p of pieces) {
     dv.setUint8(o, p.img); dv.setUint8(o + 1, p.z || 0); dv.setUint16(o + 2, p.tx || 0, true); dv.setUint16(o + 4, p.ty || 0, true);
     dv.setUint16(o + 6, p.x, true); dv.setUint16(o + 8, p.y, true); dv.setUint16(o + 10, p.s, true);
-    dv.setUint8(o + 12, p.o); dv.setFloat32(o + 13, p.w, true);
-    o += PIECE_BYTES[2];
+    dv.setUint8(o + 12, (p.o & 7) | (p.item ? HAS_ITEM : 0)); dv.setFloat32(o + 13, p.w, true);
+    o += PIECE_BYTES[3];
+    if (p.item) { dv.setUint32(o, p.item, true); o += 4; }
   }
   return b64urlEncode(new Uint8Array(buf));
 }
@@ -455,18 +461,26 @@ export function decodeRecipe(str) {
   if (!PIECE_BYTES[version]) throw new Error("Unknown recipe version");
   const flags = dv.getUint8(1), C = flags & 1 ? 3 : 1, neutral = !!(flags & 2);
   const count = dv.getUint16(2, true), pb = PIECE_BYTES[version];
-  if (bytes.length !== 4 + 4 * C + pb * count || count > 2000) throw new Error("Malformed recipe");
+  if (count > 2000 || bytes.length < 4 + 4 * C + pb * count) throw new Error("Malformed recipe");
   const tmean = Array.from({ length: C }, (_, c) => dv.getFloat32(4 + 4 * c, true));
   const pieces = [];
   let o = 4 + 4 * C;
-  for (let i = 0; i < count; i++, o += pb) {
-    pieces.push(version === 1
-      ? { img: dv.getUint8(o), z: 0, tx: 0, ty: 0, x: dv.getUint16(o + 1, true), y: dv.getUint16(o + 3, true),
-          s: dv.getUint16(o + 5, true), o: dv.getUint8(o + 7) & 7, w: dv.getFloat32(o + 8, true) }
-      : { img: dv.getUint8(o), z: dv.getUint8(o + 1), tx: dv.getUint16(o + 2, true), ty: dv.getUint16(o + 4, true),
-          x: dv.getUint16(o + 6, true), y: dv.getUint16(o + 8, true), s: dv.getUint16(o + 10, true),
-          o: dv.getUint8(o + 12) & 7, w: dv.getFloat32(o + 13, true) });
+  for (let i = 0; i < count; i++) {
+    if (o + pb > bytes.length) throw new Error("Malformed recipe");
+    if (version === 1) {
+      pieces.push({ img: dv.getUint8(o), z: 0, tx: 0, ty: 0, item: 0, x: dv.getUint16(o + 1, true), y: dv.getUint16(o + 3, true),
+        s: dv.getUint16(o + 5, true), o: dv.getUint8(o + 7) & 7, w: dv.getFloat32(o + 8, true) });
+      o += pb;
+      continue;
+    }
+    const ob = dv.getUint8(o + 12), withItem = version === 3 && (ob & HAS_ITEM);
+    if (withItem && o + pb + 4 > bytes.length) throw new Error("Malformed recipe");
+    pieces.push({ img: dv.getUint8(o), z: dv.getUint8(o + 1), tx: dv.getUint16(o + 2, true), ty: dv.getUint16(o + 4, true),
+      x: dv.getUint16(o + 6, true), y: dv.getUint16(o + 8, true), s: dv.getUint16(o + 10, true),
+      o: ob & 7, w: dv.getFloat32(o + 13, true), item: withItem ? dv.getUint32(o + pb, true) : 0 });
+    o += pb + (withItem ? 4 : 0);
   }
+  if (o !== bytes.length) throw new Error("Malformed recipe");
   if (!tmean.every(Number.isFinite) || !pieces.every((p) => Number.isFinite(p.w) && p.w >= 0)) {
     throw new Error("Malformed recipe");
   }

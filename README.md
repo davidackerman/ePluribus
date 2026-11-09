@@ -58,7 +58,7 @@ It must be served over HTTP (module scripts and workers don't load from `file://
 
 ## Image packs
 
-`tools/make_packs.py` builds `web/packs/` (18 packs, about 7.6 MB) from three kinds of source:
+`tools/make_packs.py` builds `web/packs/` (31 packs; about 8.0 MB bundled, the rest streamed) from three kinds of source:
 
 - **scikit-image's science samples:** Hubble deep field, Moon, retina, cornea, tissue stains,
   fluorescent cells, head scans.
@@ -67,21 +67,33 @@ It must be served over HTTP (module scripts and workers don't load from `file://
   Earth from orbit, landscapes, oceans, planets, nebulae. They were reviewed by eye (safe for
   work; no duplicates, charts or photos of people), and the builder re-checks at build time
   that every one is still public domain or CC0.
-- **Live maps** (below).
+- **Live sources** (below): 17 of them, 334 huge images and maps in all.
 
 Each build uses up to 4 random images per pack, so no two builds are alike and downloads stay
-small. Image and map ids in `packs.json` are part of the share-link format: never renumber
-them, only append.
+small. Image and map ids in `packs.json`, and the order of a live set's images, are part of the
+share-link format: never renumber or reorder them, only append. `make_packs.py` keeps every
+image it has already shipped byte for byte, and caches what it downloads in `tools/.cache/`.
 
-### Live maps
+### Live sources
 
-Some packs are huge public image pyramids read tile by tile from their hosts, as in
-[coresample](https://github.com/davidackerman/coresample): the Moon (LRO WAC mosaic via NASA
-Trek), Mars (CTX mosaic via Esri), Hubble's Andromeda and Webb's Carina nebula (ESA's Zoomify
-archives). Each build fetches about 320 random tiles (random zoom, random place; roughly
-10-20 MB), skips blank and no-data tiles, and cuts full-frame crops from them - so every build
-uses different pieces, at every scale. Map specs are in `tools/make_packs.py` (`MAPS`); the
-readers are in `web/maps.js`.
+Most of the images are never downloaded in advance: they're huge public image pyramids,
+read tile by tile from their hosts (all of which allow it from a web page), as in
+[coresample](https://github.com/davidackerman/coresample):
+
+| Pack | Source |
+| --- | --- |
+| Moon, Mars, Mercury, Moon heights, Mars in colour, Jupiter's moons (Europa, Ganymede, Callisto), small worlds (Vesta, Ceres, Phobos) | global mosaics via [NASA Trek](https://trek.nasa.gov) (Mars CTX via Esri) |
+| Earth by day, Earth at night, Clouds, Ocean temperatures, Mountains in colour | NASA [GIBS](https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api) Earth layers |
+| Andromeda, Carina nebula, Hubble's greatest hits (100 images), Webb's greatest hits (206 images) | ESA/Hubble and ESA/Webb zoomable archives (CC BY 4.0) |
+| Inside cells (9 electron-microscope volumes: HeLa, macrophage, Jurkat T cell, breast cancer cell, mouse pancreas, choroid plexus, more HeLa) | Janelia's [OpenOrganelle](https://openorganelle.janelia.org) (CC BY 4.0), the JPEG Neuroglancer copies |
+
+Each build shares about 320 random tiles among the selected sources (random image of a set,
+random zoom, random place), skips blank and no-data tiles, and cuts full-frame crops from
+them, so every build uses different pieces at every scale. An electron-microscope tile is a
+slice through the middle of one 96-voxel chunk, across x-y, x-z or y-z (one chunk gives
+three). The specs are made by `tools/make_packs.py` (`MAPS`, `XYZ_SETS` and the ESA and
+OpenOrganelle readers there, which keep only real observations and enough resolution); the
+browser readers are in `web/maps.js`.
 
 ## Sharing and privacy
 
@@ -162,8 +174,13 @@ GitHub Pages serves that branch.
 
 - **scikit-image sample data:** each image's credit is in `web/packs/packs.json`, from
   scikit-image's documentation.
-- **NASA** images (Moon map, astronaut photo, Earth from orbit, planets): public domain.
-- **ESA/Hubble and ESA/Webb** (Andromeda, Carina nebula): CC BY 4.0, credited in the app.
+- **NASA** images (Trek maps of the Moon, Mercury, Mars, Jupiter's moons, Vesta, Ceres and
+  Phobos; GIBS Earth layers; astronaut photo, Earth from orbit, planets): public domain,
+  credited in the app with the mission and team.
+- **ESA/Hubble and ESA/Webb** (Andromeda, Carina nebula, both greatest-hits sets): CC BY 4.0,
+  each image's own credit line shown in the app.
+- **OpenOrganelle** (Janelia Research Campus, COSEM Project Team): CC BY 4.0, credited per
+  volume.
 - **Mars CTX mosaic:** free for all uses with the credit "NASA/JPL/MSSS/The Murray Lab".
 - **Wikimedia Commons picks:** public domain or CC0; each credit (artist, title, source page)
   is in `packs.json` and shown under every picture made with it.

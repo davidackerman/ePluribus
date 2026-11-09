@@ -129,8 +129,24 @@ if (C === 3) {
   check(one.exhausted && one.done === 1, `whole image only + no turning, one square image: exactly ${one.done} distinct piece (no duplicates)`);
 }
 
+// pieces of live sets carry an item (which image, and more); others don't pay for it
+{
+  const live = [
+    { img: 3, z: 0, tx: 0, ty: 0, x: 10, y: 20, s: 64, o: 5, w: 0.25 },
+    { img: 204, item: 37, z: 4, tx: 12, ty: 9, x: 1, y: 2, s: 200, o: 0, w: 1.5 },
+    { img: 206, item: 69 * 256 + 3, z: 2, tx: 7, ty: 1, x: 0, y: 5, s: 90, o: 7, w: 0.75 },
+    { img: 200, z: 8, tx: 300, ty: 100, x: 3, y: 4, s: 32, o: 2, w: 2 },
+  ];
+  const codeL = encodeRecipe({ C: 3, tmean: [0.1, 0.2, 0.3], pieces: live });
+  const decL = decodeRecipe(codeL);
+  const same = decL.pieces.every((p, i) => ["img", "z", "tx", "ty", "x", "y", "s", "o", "w"].every((k) => p[k] === live[i][k]) && p.item === (live[i].item || 0));
+  check(same, "live-set items round-trip (and pieces without one read as item 0)");
+  const bytes = Math.ceil(((4 + 12 + 4 * 17 + 2 * 4) * 4) / 3);
+  check(codeL.length === bytes, `only the two set pieces carry the extra 4 bytes (${codeL.length} characters)`);
+}
+
 // malformed recipes must be rejected, not crash
 let rejected = 0;
-for (const bad of ["", "AAAA", code.slice(0, -7), "!!!!"]) { try { decodeRecipe(bad); } catch { rejected++; } }
-check(rejected === 4, "malformed recipes are rejected");
+for (const bad of ["", "AAAA", code.slice(0, -7), code + "AAAA", "!!!!"]) { try { decodeRecipe(bad); } catch { rejected++; } }
+check(rejected === 5, "malformed recipes are rejected");
 process.exit(failures ? 1 : 0);

@@ -6,7 +6,7 @@ import {
   encodeRecipe, decodeRecipe, mulberry32,
 } from "./core.js";
 import { encodeGif } from "./gif.js";
-import { openMap, gatherTiles, fetchTile, fetchDecoys, mapLimit } from "./maps.js";
+import { openMap, gatherTiles, fetchTile, fetchDecoys, mapLimit, itemSpec, splitItem } from "./maps.js";
 import { findStore, storeRecipe, loadRecipe } from "./share.js";
 import { startStats, track } from "./stats.js";
 
@@ -17,7 +17,7 @@ const HI = 256;          // display resolution once a build is finished
 const DL = 512;          // download resolution
 const MAX_SIDE = 1024;   // photos and own images are scaled down to this
 const LUMA = [0.2125, 0.7154, 0.0721];
-const TILE_BUDGET = 320; // random map tiles fetched per build, shared by the selected maps
+const TILE_BUDGET = 320; // random tiles fetched per build, shared by the selected live sources
 const MAX_PER_PACK = 4;  // bundled images used per pack per build (a random few: fresh mix, small download)
 const SAMPLES = {
   mona: { url: "samples/mona.jpg", crop: { x: 117, y: 67, s: 367 } },
@@ -77,10 +77,14 @@ function catalogSource(id) {
 
 const selectedPacks = () => state.catalog.packs.filter((p) => state.selected.has(p.id));
 
-// A map tile becomes a small source image; pieces are full-frame crops of it.
+// A live tile becomes a small source image; pieces are full-frame crops of it.
+const tileKey = (id, item, z, x, y) => `${id}:${item || 0}:${z}/${x}/${y}`;
 function tileSource(spec, t) {
-  return Object.assign(makeSource(`map:${spec.id}:${t.z}/${t.x}/${t.y}`, t.w, t.h, t.rgb),
-    { mapId: spec.id, z: t.z, tx: t.x, ty: t.y, title: `${spec.name}, zoom ${t.z}` });
+  const item = t.item || 0, s = itemSpec(spec, item);
+  const title = !spec.items ? `${spec.name}, zoom ${t.z}`
+    : s.kind === "precomputed" ? `${s.name} (electron microscope, ${Math.round(s.scales[t.z].res[0])} nm pixels)` : s.name;
+  return Object.assign(makeSource(`map:${tileKey(spec.id, item, t.z, t.x, t.y)}`, t.w, t.h, t.rgb),
+    { mapId: spec.id, item, z: t.z, tx: t.x, ty: t.y, title });
 }
 
 // Every selected pack (and the user's own images) gets an equal share of the candidates;
@@ -98,21 +102,28 @@ async function gatherSources(run) {
     if (use.length) groups.push(await Promise.all(use.map(catalogSource)));
   }
   const maps = packs.filter((q) => q.map != null);
-  const perMap = Math.max(40, Math.round(TILE_BUDGET / Math.max(1, maps.length)));
-  for (const [mi, p] of maps.entries()) {
+  const perMap = Math.max(12, Math.round(TILE_BUDGET / Math.max(1, maps.length))), total = perMap * maps.length;
+  const counts = maps.map(() => 0);
+  const report = () => {
+    const k = counts.reduce((a, b) => a + b, 0);
+    setStatus(`Fetching random pieces of ${maps.length === 1 ? state.mapById.get(maps[0].map).name : `${maps.length} live sources`}: ${k} of ${total}`);
+    setProgress(0.03 + (k / total) * 0.07);
+  };
+  if (maps.length) report();
+  const fetched = await mapLimit(maps, 6, async (p, mi) => {
     const spec = state.mapById.get(p.map);
-    setStatus(`Opening ${spec.name}…`);
-    const map = await openMap(spec);
-    const tiles = await gatherTiles(map, perMap, rand, {
-      cancelled: () => run.cancelled,
-      onProgress: (k) => {
-        setStatus(`Fetching random pieces of ${spec.name} (${mi + 1} of ${maps.length} maps): ${k} of ${perMap}`);
-        setProgress(((mi + k / perMap) / maps.length) * 0.08);
-      },
-    });
-    if (run.cancelled) throw new Error("stopped");
+    try {
+      return await gatherTiles(spec, perMap, rand, { cancelled: () => run.cancelled, onProgress: (k) => { counts[mi] = k; report(); } });
+    } catch (err) {
+      console.warn(`couldn't use ${spec.name}`, err);
+      return [];
+    }
+  });
+  if (run.cancelled) throw new Error("stopped");
+  fetched.forEach((tiles, mi) => {
+    const spec = state.mapById.get(maps[mi].map);
     if (tiles.length) groups.push(tiles.map((t) => tileSource(spec, t)));
-  }
+  });
   if (state.own.length) groups.push(state.own.map((o) => o.src));
   const sources = groups.flat();
   if (!sources.length) throw new Error("none of the images could be loaded");
@@ -337,7 +348,8 @@ function renderPacks() {
     b.setAttribute("aria-pressed", String(state.selected.has(p.id)));
     const thumbs = document.createElement("div");
     thumbs.className = "thumbs";
-    const thumbFiles = p.map != null ? [state.mapById.get(p.map).thumb] : p.images.slice(0, 3).map((id) => state.byId.get(id).thumb);
+    const spec = p.map != null ? state.mapById.get(p.map) : null;
+    const thumbFiles = spec ? spec.thumbs || [spec.thumb] : p.images.slice(0, 3).map((id) => state.byId.get(id).thumb);
     for (const f of thumbFiles) {
       const img = document.createElement("img");
       img.src = "packs/" + f;
@@ -346,7 +358,7 @@ function renderPacks() {
     }
     const name = document.createElement("b"), blurb = document.createElement("span");
     name.textContent = p.name;
-    blurb.textContent = p.map != null ? `${p.blurb} · live map`
+    blurb.textContent = spec ? `${p.blurb} · ${spec.items ? `${spec.items.length} live image${spec.items.length > 1 ? "s" : ""}` : "live map"}`
       : `${p.blurb} · ${p.images.length} image${p.images.length > 1 ? "s" : ""}`;
     b.append(thumbs, name, blurb);
     b.addEventListener("click", () => {
@@ -737,7 +749,7 @@ function wireSheet() {
 /* ------------------------------------------------------------ "37% Mars" */
 function familyOf(src) {
   if (src.own) return "your images";
-  if (src.mapId != null) return state.mapById.get(src.mapId).family;
+  if (src.mapId != null) return itemSpec(state.mapById.get(src.mapId), src.item).family;
   return state.familyByImg.get(src.imgId) || "other";
 }
 
@@ -769,6 +781,8 @@ const FAMILY_COLORS = {
   eyes: "#ff5c5c", tissue: "#e8a87c", "glowing cells": "#4ade80", "head scans": "#a3a3a3", "your images": "#ffd24a",
   nebulae: "#c084fc", planets: "#fbbf24", Earth: "#38bdf8", landscapes: "#a3e635", oceans: "#22d3ee",
   paintings: "#f472b6", "science art": "#34d399", patterns: "#fb923c",
+  Hubble: "#93c5fd", Webb: "#f9a8d4", "cells (EM)": "#d6d3d1", Mercury: "#b8a48c", Europa: "#e7d7b0",
+  Ganymede: "#a8a29e", Callisto: "#78716c", Vesta: "#d4d4d8", Ceres: "#9ca3af", Phobos: "#a16207",
 };
 
 function chip(text, color) {
@@ -809,7 +823,10 @@ function openPiece(rank) {
   where.hidden = true;
   $("dlgSource").textContent = "";
   if (p.src.mapId != null) {
-    coresampleLink(p).then((url) => { if (url && dlgRank === rank0) { where.href = url; where.hidden = false; } }).catch(() => {});
+    $("dlgSource").textContent = itemSpec(state.mapById.get(p.src.mapId), p.src.item).credit;
+    pieceLink(p).then((l) => {
+      if (l && dlgRank === rank0) { where.href = l.url; where.textContent = l.label; where.hidden = false; }
+    }).catch(() => {});
   } else if (!p.src.own) {
     const im = state.byId.get(p.src.imgId);
     $("dlgSource").textContent = im.credit.split(/(?<=\.)\s/)[0];
@@ -826,15 +843,29 @@ function drawDialogPicture() {
   $("dlgPictureCap").textContent = without ? "The picture without it" : "The whole picture";
 }
 
-// The exact spot a map piece came from, in coresample's viewer (?d=dataset&v=x,y,z,scale,
-// in full-resolution pixels; scale = full-resolution pixels per screen pixel).
-async function coresampleLink(p) {
-  const spec = state.mapById.get(p.src.mapId);
-  if (!spec.coresample) return null;
-  const map = await openMap(spec), f = 2 ** (map.zooms.length - 1 - p.src.z), ts = map.spec.tileSize;
-  const cx = (p.src.tx * ts + p.x + p.s / 2) * f, cy = (p.src.ty * ts + p.y + p.s / 2) * f;
+// Where a live piece came from: the exact spot in coresample's viewer when coresample has
+// that dataset (?d=dataset&v=x,y,z,scale, in full-resolution pixels; scale = full-resolution
+// pixels per screen pixel), else the image's own page.
+async function pieceLink(p) {
+  const s = itemSpec(state.mapById.get(p.src.mapId), p.src.item), { e } = splitItem(p.src.item);
+  const page = s.page ? { url: s.page, label: "See the original" } : null;
+  if (!s.coresample) return page;
+  let cx, cy, cz = 0, f;
+  if (s.kind === "precomputed") {
+    if ((e & 3) !== 0) return page; // coresample shows x-y planes
+    const sc = s.scales[p.src.z], fz = sc.res[2] / s.res0[2];
+    f = sc.res[0] / s.res0[0];
+    cx = (p.src.tx * sc.chunk[0] + p.x + p.s / 2) * f;
+    cy = (p.src.ty * sc.chunk[1] + p.y + p.s / 2) * (sc.res[1] / s.res0[1]);
+    cz = ((e >> 2) * sc.chunk[2] + Math.min(sc.chunk[2], sc.size[2] - (e >> 2) * sc.chunk[2]) / 2) * fz;
+  } else {
+    const map = await openMap(state.mapById.get(p.src.mapId), p.src.item), ts = map.spec.tileSize;
+    f = 2 ** (map.zooms.length - 1 - p.src.z);
+    cx = (p.src.tx * ts + p.x + p.s / 2) * f;
+    cy = (p.src.ty * ts + p.y + p.s / 2) * f;
+  }
   const scale = Math.max(0.5, (p.s * f) / 350);
-  return `${CORESAMPLE}?d=${spec.coresample}&v=${Math.round(cx)},${Math.round(cy)},0,${+scale.toFixed(2)}&globe=0`;
+  return { url: `${CORESAMPLE}?d=${s.coresample}&v=${Math.round(cx)},${Math.round(cy)},${Math.round(cz)},${+scale.toFixed(2)}&globe=0`, label: "Visit this spot" };
 }
 
 function wireDialog() {
@@ -855,14 +886,14 @@ function buildCredits(run) {
   list.replaceChildren();
   const seen = new Set();
   for (const p of run.pieces) {
-    const key = p.src.mapId != null ? `map:${p.src.mapId}` : p.src.key;
+    const key = p.src.mapId != null ? `map:${p.src.mapId}:${splitItem(p.src.item).index}` : p.src.key;
     if (seen.has(key)) continue;
     seen.add(key);
     const li = document.createElement("li");
     if (p.src.own) li.textContent = `${p.src.title}: stays on your device.`;
     else if (p.src.mapId != null) {
-      const spec = state.mapById.get(p.src.mapId);
-      li.textContent = `${spec.name}: ${spec.credit}`;
+      const s = itemSpec(state.mapById.get(p.src.mapId), p.src.item);
+      li.textContent = `${s.name}: ${s.credit}`;
     } else {
       const im = state.byId.get(p.src.imgId), first = im.credit.split(/(?<=\.)\s/)[0];
       li.textContent = `${im.title}: ${first} (scikit-image sample data)`;
@@ -918,8 +949,8 @@ async function share() {
   run.pieces.forEach((p, i) => {
     if (!(run.wFinal[i] > 0)) return;
     const where = p.src.mapId != null
-      ? { img: p.src.mapId, z: p.src.z, tx: p.src.tx, ty: p.src.ty }
-      : { img: p.src.imgId, z: 0, tx: 0, ty: 0 };
+      ? { img: p.src.mapId, item: p.src.item || 0, z: p.src.z, tx: p.src.tx, ty: p.src.ty }
+      : { img: p.src.imgId, item: 0, z: 0, tx: 0, ty: 0 };
     pieces.push({ ...where, x: p.x, y: p.y, s: p.s, o: p.o, w: run.wFinal[i] });
   });
   const note = $("shareNote"), base = location.href.split("#")[0];
@@ -1102,7 +1133,11 @@ async function startReplay(code) {
     rec = decodeRecipe(code);
     for (const p of rec.pieces) {
       if (p.s < 1) throw new Error("bad piece");
-      if (state.mapById.has(p.img)) continue; // map tiles are checked once fetched
+      if (state.mapById.has(p.img)) { // live tiles are checked once their source opens
+        const spec = state.mapById.get(p.img);
+        if (spec.items ? splitItem(p.item).index >= spec.items.length : p.item) throw new Error("bad piece");
+        continue;
+      }
       const im = state.byId.get(p.img);
       if (!im || p.x + p.s > im.width || p.y + p.s > im.height) throw new Error("bad piece");
     }
@@ -1121,23 +1156,28 @@ async function startReplay(code) {
   try {
     const imgIds = [...new Set(rec.pieces.filter((p) => !state.mapById.has(p.img)).map((p) => p.img))];
     for (const id of imgIds) srcs.set(`img:${id}`, await catalogSource(id));
-    // map tiles: fetch exactly the tiles used, plus as many random decoys from each map
+    // live tiles: fetch exactly the tiles used, plus as many random decoys from each source
     const tiles = new Map();
-    for (const p of rec.pieces) if (state.mapById.has(p.img)) tiles.set(`${p.img}:${p.z}/${p.tx}/${p.ty}`, p);
-    const perMap = new Map();
-    for (const p of tiles.values()) perMap.set(p.img, (perMap.get(p.img) || 0) + 1);
+    for (const p of rec.pieces) if (state.mapById.has(p.img)) tiles.set(tileKey(p.img, p.item, p.z, p.tx, p.ty), p);
+    const perSource = new Map(); // "map id:image index" -> tiles used
+    for (const p of tiles.values()) {
+      const k = `${p.img}:${splitItem(p.item).index}`;
+      perSource.set(k, (perSource.get(k) || 0) + 1);
+    }
     const rand = mulberry32((Math.random() * 2 ** 31) | 0);
     let got = 0;
-    const decoys = [...perMap].map(async ([id, k]) => {
-      try { await fetchDecoys(await openMap(state.mapById.get(id)), k, rand); } catch { /* decoys are best effort */ }
+    const decoys = [...perSource].map(async ([k, n]) => {
+      const [id, index] = k.split(":").map(Number);
+      try { await fetchDecoys(state.mapById.get(id), index, n, rand); } catch { /* decoys are best effort */ }
     });
     await mapLimit([...tiles], 8, async ([key, p]) => {
-      const spec = state.mapById.get(p.img), map = await openMap(spec);
-      if (!map.has(p.z, p.tx, p.ty)) throw new Error("bad tile");
-      const t = await fetchTile(map, p.z, p.tx, p.ty);
-      if (!t) throw new Error(`couldn't fetch a tile of the ${spec.name}`);
-      srcs.set(key, tileSource(spec, { ...t, z: p.z, x: p.tx, y: p.ty }));
-      setStatus(`Fetching the map pieces… ${++got} of ${tiles.size}`);
+      const spec = state.mapById.get(p.img), map = await openMap(spec, p.item);
+      const t = { z: p.z, x: p.tx, y: p.ty, e: splitItem(p.item).e };
+      if (!map.has(t)) throw new Error("bad tile");
+      const tile = await fetchTile(map, t);
+      if (!tile) throw new Error(`couldn't fetch a piece of ${itemSpec(spec, p.item).name}`);
+      srcs.set(key, tileSource(spec, { ...tile, item: p.item, z: p.z, x: p.tx, y: p.ty }));
+      setStatus(`Fetching the live pieces… ${++got} of ${tiles.size}`);
     });
     await Promise.all(decoys);
   } catch (err) {
@@ -1146,7 +1186,7 @@ async function startReplay(code) {
     return;
   }
   run.pieces = rec.pieces.map((p) => ({
-    src: srcs.get(state.mapById.has(p.img) ? `${p.img}:${p.z}/${p.tx}/${p.ty}` : `img:${p.img}`),
+    src: srcs.get(state.mapById.has(p.img) ? tileKey(p.img, p.item, p.z, p.tx, p.ty) : `img:${p.img}`),
     x: p.x, y: p.y, s: p.s, o: p.o,
   }));
   if (run.pieces.some((p) => p.x + p.s > p.src.w || p.y + p.s > p.src.h)) { fail(); return; }

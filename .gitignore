@@ -9,3 +9,4 @@ experiments/out/
 /superpose_atoms.png
 /anim_state.pkl
 /*.gif
+tools/.cache/

@@ -8,9 +8,17 @@ const [URL, OUT] = process.argv.slice(2);
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1100, height: 1500 }, permissions: ["clipboard-read", "clipboard-write"] });
 const errors = [];
+const SITE = new globalThis.URL(URL).host; // (URL is the address argument here)
 const watch = (page, tag) => {
-  page.on("console", (m) => { if (m.type() === "error") errors.push(`${tag} console: ${m.text()}`); });
+  // failed loads are judged by URL below (the console's message doesn't say which file)
+  page.on("console", (m) => { if (m.type() === "error" && !/^Failed to load resource/.test(m.text())) errors.push(`${tag} console: ${m.text()}`); });
   page.on("pageerror", (e) => errors.push(`${tag} pageerror: ${e.message}`));
+  // the site's own files must all load; live tile servers may answer 4xx/5xx for some tiles
+  // (those are retried or skipped), and the dev short-link store answers 404 for a missing id
+  page.on("response", (r) => {
+    const u = new globalThis.URL(r.url());
+    if (r.status() >= 400 && u.host === SITE) errors.push(`${tag} ${r.status()} for ${u.pathname}`);
+  });
 };
 const grab = (pg) => pg.evaluate(() => {
   const c = document.querySelector("#resultCanvas");
@@ -141,10 +149,8 @@ await phone.click("[data-sample=astronaut]");
 await phone.waitForTimeout(400);
 log(`phone horizontal overflow px: ${await phone.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)}`);
 
-// the broken short link legitimately logs a 404 for the missing id
-// map servers send some error pages without CORS headers (those tiles are skipped)
-const real = errors.filter((e) => !/broken console: Failed to load resource: .*404/.test(e)
-  && !/astro\.arcgis\.com|trek\.nasa\.gov|cdn\.esa(hubble|webb)\.org/.test(e)
-  && !/console: Failed to load resource: net::ERR_FAILED/.test(e));
+// live tile servers send some error pages without CORS headers (those tiles are skipped)
+const LIVE = /astro\.arcgis\.com|trek\.nasa\.gov|cdn\.esa(hubble|webb)\.org|gibs\.earthdata\.nasa\.gov|janelia-cosem-datasets/;
+const real = errors.filter((e) => !(/blocked by CORS policy/.test(e) && LIVE.test(e)) && !/console: .*net::ERR_FAILED/.test(e));
 log(real.length ? "ERRORS:\n" + real.join("\n") : "no unexpected console errors");
 await browser.close();
