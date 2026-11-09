@@ -108,6 +108,18 @@ npm install --no-save playwright-core@1.56.1
 node tests/e2e.mjs http://127.0.0.1:8765/ /tmp/ep_shots
 ```
 
+## Publishing (GitHub Pages)
+
+`.github/workflows/pages.yml` pushes `web/` to the `gh-pages` branch on every change to
+`web/` (as coresample does). To go live at https://davidackerman.github.io/ePluribus/:
+
+```sh
+gh repo edit davidackerman/ePluribus --visibility public --accept-visibility-change-consequences
+gh api -X POST repos/davidackerman/ePluribus/pages -f "source[branch]=gh-pages" -f "source[path]=/"
+```
+
+Without a short-link store (`web/config.js`), the live site shares full-recipe links.
+
 ## Before publishing
 
 - Check the licence of every bundled image and live map. The bundled images' `credit`

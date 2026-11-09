@@ -1,0 +1,41 @@
+name: Pages
+
+# The site at https://davidackerman.github.io/ePluribus/: web/ as it is (no build step),
+# pushed to the gh-pages branch, as coresample does. Pages serves that branch once it is
+# switched on (Settings > Pages > Deploy from a branch: gh-pages, / (root)).
+on:
+  push:
+    branches: [main]
+    paths:
+      - web/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write   # pushes the gh-pages branch
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the site is complete
+        run: |
+          for f in index.html app.js core.js worker.js maps.js share.js gif.js config.js style.css \
+                   og.png packs/packs.json samples/demo-recipe.txt samples/mona.jpg; do
+            [ -f "web/$f" ] || { echo "::error::web/$f is missing"; exit 1; }
+          done
+          du -sh web
+
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: web
+          force_orphan: true
+          full_commit_message: "Deploy ${{ github.sha }}"
