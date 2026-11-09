@@ -11,7 +11,7 @@ instead of tiling small photos side by side, every image covers the *whole* pict
 like a 300-image multiple exposure (or 300 slide projectors on one screen). Then share it and
 see if your friends can guess what it is.
 
-- **Make one:** pick a picture, then pick your universe - 18 packs in five tabs (space,
+- **Make one:** pick a picture (upload it, drag it onto the page or paste it), then pick your universe - 18 packs in five tabs (space,
   planets, Earth & nature, life & medicine, art), all on by default. Watch it assemble and get
   a breakdown like *"37% tissue · 26% Moon · 13% Andromeda · 13% Mars · 11% eyes"*.
 - **Share it:** a share link replays the build image by image; your friend taps *I got it!*

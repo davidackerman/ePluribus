@@ -244,6 +244,57 @@ function wireCrop() {
   window.addEventListener("resize", scheduleCrop);
 }
 
+// A picture from the upload button, a drop or a paste becomes the target.
+async function useTargetFile(file) {
+  try {
+    await setTarget(await createImageBitmap(file));
+    $("cropArea").scrollIntoView({ behavior: "smooth", block: "center" });
+  } catch {
+    alert("Sorry, that file couldn't be read as an image.");
+  }
+}
+
+// Drag a picture anywhere onto the page (or paste one) to use it; drop onto "Add your own
+// images" to add source images instead. Not while playing a shared link.
+function wireDrop() {
+  const overlay = $("dropOverlay"), own = $("ownZone");
+  let depth = 0;
+  const active = (e) => !document.body.classList.contains("replaying") && [...(e.dataTransfer?.types || [])].includes("Files");
+  const reset = () => { depth = 0; overlay.hidden = true; own.classList.remove("dropping"); };
+  window.addEventListener("dragenter", (e) => {
+    if (!active(e)) return;
+    e.preventDefault();
+    depth++;
+    overlay.hidden = false;
+  });
+  window.addEventListener("dragover", (e) => {
+    if (!active(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    const overOwn = !!e.target.closest?.("#ownZone");
+    overlay.classList.toggle("own", overOwn);
+    own.classList.toggle("dropping", overOwn);
+  });
+  window.addEventListener("dragleave", (e) => { if (active(e) && --depth <= 0) reset(); });
+  window.addEventListener("drop", (e) => {
+    if (!active(e)) return;
+    e.preventDefault();
+    const toOwn = !!e.target.closest?.("#ownZone");
+    reset();
+    const files = [...e.dataTransfer.files].filter((f) => f.type.startsWith("image/"));
+    if (!files.length) { alert("That doesn't look like a picture."); return; }
+    if (toOwn) addOwnImages(files);
+    else useTargetFile(files[0]);
+  });
+  window.addEventListener("paste", (e) => {
+    if (document.body.classList.contains("replaying")) return;
+    const f = [...(e.clipboardData?.files || [])].find((x) => x.type.startsWith("image/"));
+    if (!f) return;
+    e.preventDefault();
+    useTargetFile(f);
+  });
+}
+
 /* ------------------------------------------------------------ step 2: sources */
 function renderTabs() {
   const bar = $("packTabs");
@@ -1170,11 +1221,10 @@ async function init() {
   wireSheet();
   $("fileInput").addEventListener("change", async (e) => {
     const f = e.target.files[0];
-    if (f) {
-      try { await setTarget(await createImageBitmap(f)); } catch { alert("Sorry, that file couldn't be read as an image."); }
-    }
+    if (f) await useTargetFile(f);
     e.target.value = "";
   });
+  wireDrop();
   for (const b of document.querySelectorAll("[data-sample]")) {
     b.addEventListener("click", async () => {
       const s = SAMPLES[b.dataset.sample];

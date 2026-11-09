@@ -81,6 +81,7 @@
           <button class="secondary" data-sample="astronaut">Astronaut</button>
           <button class="secondary" data-sample="cat">Cat</button>
         </div>
+        <p class="muted small dropHint">Or drag a picture anywhere onto this page, or paste one (<kbd>Ctrl</kbd>/<kbd>&#8984;</kbd>+<kbd>V</kbd>).</p>
         <div id="cropArea" hidden>
           <p class="muted small">Faces, pets, landmarks, logos: anything works. Drag the square onto the part you want; bold, tight crops work best.</p>
           <div class="cropWrap"><canvas id="cropCanvas"></canvas></div>
@@ -100,7 +101,7 @@
           <button id="packAll" type="button" class="secondary small"></button>
         </div>
         <div id="packGrid" class="packGrid"></div>
-        <div class="own">
+        <div class="own" id="ownZone">
           <label class="button secondary">Add your own images<input type="file" id="ownInput" accept="image/*" multiple hidden></label>
           <span class="muted small">They stay on this device. Pictures made with them can't be shared as a link.</span>
           <div id="ownThumbs" class="ownThumbs"></div>
@@ -209,6 +210,10 @@
       <a id="dlgWhere" class="button primary small" target="_blank" rel="noopener" hidden>Visit this spot</a>
     </div>
   </dialog>
+
+  <div id="dropOverlay" class="dropOverlay" hidden aria-hidden="true">
+    <div class="dropBox"><b class="dropTarget">Drop to use this picture</b><b class="dropOwn">Drop to add as your own source images</b></div>
+  </div>
 
   <footer class="muted small">
     <p><b>About:</b> ePluribus turns any picture into a picture made of 300 other pictures. It's not a mosaic: instead of tiling small photos side by side, every image covers the whole frame. It layers 300 whole images (Mars and Moon maps, Hubble and Webb galaxies and nebulae, microscope slides, Earth from orbit, public-domain paintings) like a 300-image multiple exposure, adding their light until they make your picture. Free, and it runs entirely in your browser.</p>
