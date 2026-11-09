@@ -26,7 +26,7 @@ jobs:
 
       - name: Check the site is complete
         run: |
-          for f in index.html app.js core.js worker.js maps.js share.js gif.js config.js style.css \
+          for f in index.html app.js core.js worker.js maps.js share.js stats.js gif.js config.js style.css \
                    og.png packs/packs.json samples/demo-recipe.txt samples/mona.jpg; do
             [ -f "web/$f" ] || { echo "::error::web/$f is missing"; exit 1; }
           done

@@ -5,3 +5,7 @@
 // whole recipe (a few thousand characters). On localhost the page also looks for the
 // development store from tests/short_link_store.py.
 export const SHORT_LINK_STORE = "";
+
+// GOATCOUNTER: your GoatCounter site code (the "xyz" in xyz.goatcounter.com) to count visits
+// and button presses anonymously (see stats.js). Empty: no counting at all.
+export const GOATCOUNTER = "";

@@ -8,6 +8,7 @@ import {
 import { encodeGif } from "./gif.js";
 import { openMap, gatherTiles, fetchTile, fetchDecoys, mapLimit } from "./maps.js";
 import { findStore, storeRecipe, loadRecipe } from "./share.js";
+import { startStats, track } from "./stats.js";
 
 const CORESAMPLE = "https://davidackerman.github.io/coresample/";
 
@@ -473,7 +474,10 @@ async function build() {
     run.workers?.forEach((w) => w.terminate());
     $("stopBtn").hidden = true;
   }
-  if (state.run === run && run.fit?.k) await finishBuild(run);
+  if (state.run === run && run.fit?.k) {
+    await finishBuild(run);
+    track("picture-made");
+  }
   state.busy = false;
   updateBuildButton();
 }
@@ -824,6 +828,7 @@ async function download() {
     a.href = URL.createObjectURL(blob);
     a.download = k === run.n ? "epluribus.png" : `epluribus-${k}-images.png`;
     a.click();
+    track("image-saved");
     setTimeout(() => URL.revokeObjectURL(a.href), 10000);
   } finally {
     setStatus(before);
@@ -843,6 +848,7 @@ async function share() {
     pieces.push({ ...where, x: p.x, y: p.y, s: p.s, o: p.o, w: run.wFinal[i] });
   });
   const note = $("shareNote"), base = location.href.split("#")[0];
+  track("link-shared");
   if (!run.shareUrl) {
     const recipe = encodeRecipe({ C: run.C, tmean: run.tmean, pieces, neutral: run.neutral });
     run.shareUrl = `${base}#r=${recipe}`;
@@ -995,6 +1001,7 @@ async function makeGif() {
     run.gifFile = new File([blob], "epluribus.gif", { type: "image/gif" });
     $("gifPreview").src = run.gifUrl;
     $("gifBox").hidden = false;
+    track("gif-made");
     // sharing a file needs a fresh tap, so it gets its own button (where the device can)
     $("gifShareBtn").hidden = !navigator.canShare?.({ files: [run.gifFile] });
     $("gifNote").textContent = `${(blob.size / 1e6).toFixed(1)} MB. Post it with your share link so people can play.`;
@@ -1096,6 +1103,7 @@ function guessNow() {
   const run = state.run;
   if (!run?.replay) return;
   run.guessedAt = Math.max(1, +$("scrub").value);
+  track("guessed");
   run.playing = false;
   $("guessBtn").hidden = true;
   const k = run.guessedAt, n = run.n;
@@ -1131,6 +1139,7 @@ async function playDemo() {
     if (!r.ok) throw new Error("no demo");
     const code = (await r.text()).trim();
     history.replaceState(null, "", `#r=${code}`);
+    track("demo-played");
     await startReplay(code);
   } catch {
     $("demoBtn").textContent = "Demo unavailable";
@@ -1152,6 +1161,7 @@ async function init() {
   state.catalog = await r.json();
   for (const im of state.catalog.images) state.byId.set(im.id, im);
   for (const m of state.catalog.maps || []) state.mapById.set(m.id, m);
+  if (startStats()) $("statsNote").hidden = false;
   for (const p of state.catalog.packs) for (const id of p.images || []) if (!state.familyByImg.has(id)) state.familyByImg.set(id, p.family);
   wireDialog();
   for (const p of state.catalog.packs) state.selected.add(p.id);
@@ -1208,6 +1218,7 @@ async function init() {
   $("challengeBtn").addEventListener("click", challenge);
   state.store = await findStore();
   const long = location.hash.match(/^#r=([A-Za-z0-9_-]+)$/), short = location.hash.match(/^#s=([A-Za-z0-9_.-]+)$/);
+  if (long || short) track("link-opened");
   if (long) await startReplay(long[1]);
   else if (short) {
     let recipe = null;

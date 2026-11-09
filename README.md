@@ -93,6 +93,10 @@ readers are in `web/maps.js`.
     `GET {store}/s/{id}` -> the bytes; CORS open. Set its URL in `web/config.js`.
   - Development store: `python tests/short_link_store.py` (port 8799, in memory); on
     localhost the page finds it by itself.
+- **Counting (optional):** set `GOATCOUNTER` in `web/config.js` to count visits and events
+  (picture made, link shared/opened, GIF made, image saved, demo played, guessed) with
+  [GoatCounter](https://www.goatcounter.com/): no cookies, no personal data. It sends only the
+  page path, never the `#` part where recipes live (`web/stats.js`).
 - **Map hosts:** tiles are picked at random, independent of the photo, and the final render
   uses tiles already in memory, so the hosts never learn which pieces were chosen. A friend
   opening a link must fetch its exact tiles; their browser also fetches as many random decoy
@@ -113,7 +117,7 @@ Share GIF appears where the device can share files; Download GIF works everywher
 | `web/core.js` | The maths: resampling, candidate pool, scoring, weight solver, rendering, recipes. No DOM. |
 | `web/worker.js` | Scoring worker: holds a slice of the candidate pool. |
 | `web/maps.js` | Live-map readers (web-map tiles, Zoomify): random tiles, decoys. |
-| `web/share.js`, `web/config.js` | Short encrypted share links; deployment settings. |
+| `web/share.js`, `web/stats.js`, `web/config.js` | Short encrypted share links; optional anonymous counts; deployment settings. |
 | `web/gif.js` | Small animated-GIF encoder (median-cut palette + LZW). |
 | `web/packs/` | Pack images, thumbnails and `packs.json` (built by `tools/make_packs.py`). |
 | `web/samples/` | Sample pictures (Mona Lisa, astronaut, cat), the demo round's recipe and hero images. |

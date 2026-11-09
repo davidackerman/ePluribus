@@ -25,7 +25,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 a { color: var(--blue); }
-main, .top, footer { max-width: 1000px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
+main, .top, footer { max-width: 1280px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
 main { padding-bottom: 24px; }
 
 /* ---------------------------------------------------------------- hero */
@@ -94,7 +94,7 @@ button:focus-visible, .button:focus-visible, input:focus-visible, select:focus-v
 select { font: inherit; background: var(--button); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; }
 
 /* step 1: crop */
-.cropWrap { width: 100%; max-width: 520px; }
+.cropWrap { width: 100%; max-width: 560px; }
 #cropCanvas { width: 100%; display: block; border-radius: 10px; touch-action: none; cursor: move; background: #000; }
 .previewRow { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
 #targetPreview { width: 72px; height: 72px; border-radius: 8px; background: #000; flex: none; }
@@ -130,15 +130,15 @@ select { font: inherit; background: var(--button); color: var(--text); border: 1
 .ownThumbs button { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; padding: 0; font-size: 12px; line-height: 20px; }
 
 /* ---------------------------------------------------------------- the result */
-.stageGrid { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 20px; }
+.stageGrid { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 24px; }
 .mainCol { min-width: 0; }
-#resultCanvas { width: 100%; max-width: 480px; aspect-ratio: 1; display: block; border-radius: 12px; background: #000; box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.9); }
-.statusRow { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; min-height: 48px; max-width: 480px; }
-.progress { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; max-width: 480px; }
+#resultCanvas { width: 100%; max-width: 640px; aspect-ratio: 1; display: block; border-radius: 12px; background: #000; box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.9); }
+.statusRow { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; min-height: 48px; max-width: 640px; }
+.progress { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; max-width: 640px; }
 #progressBar { height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
-.composition { margin: 14px 0 0; max-width: 480px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-weight: 700; }
+.composition { margin: 14px 0 0; max-width: 640px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-weight: 700; }
 .composition .chip { font-size: 14px; }
-.guessNote { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; padding: 12px 14px; max-width: 480px;
+.guessNote { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; padding: 12px 14px; max-width: 640px;
   border-radius: 12px; border: 1px solid var(--accent); }
 #gifBox { margin: 16px 0 0; max-width: 480px; }
 #gifPreview { width: 100%; display: block; border-radius: 10px; }
@@ -158,7 +158,7 @@ select { font: inherit; background: var(--button); color: var(--text); border: 1
 
 details { margin-top: 16px; }
 summary { cursor: pointer; font-weight: 600; }
-details p, details li { color: var(--muted); font-size: 14px; }
+details p, details li { color: var(--muted); font-size: 14px; max-width: 75ch; }
 
 /* ---------------------------------------------------------------- one piece, up close */
 #pieceDialog { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 18px; padding: 18px; width: min(640px, calc(100vw - 24px)); max-height: calc(100vh - 24px); }
@@ -172,7 +172,7 @@ details p, details li { color: var(--muted); font-size: 14px; }
 
 /* ---------------------------------------------------------------- footer */
 footer { padding-top: 8px; padding-bottom: 36px; }
-footer p { margin: 4px 0; }
+footer p { margin: 4px 0; max-width: 90ch; }
 
 /* ---------------------------------------------------------------- playing a shared link: get the game on screen */
 body.replaying .tag, body.replaying .heroArt, body.replaying .heroCtas { display: none; }
