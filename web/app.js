@@ -527,6 +527,7 @@ function renderAt(k) {
   $("scrubLabel").textContent = `${k} of ${run.n}`;
   drawFloat($("resultCanvas"), frameVec(run, k), run.C, HI);
   showAdding(run, k - 1);
+  drawSheetMarks(run, k);
 }
 
 // The picture after k images. The builder has the true k-image fit; replays
@@ -582,9 +583,13 @@ function buildSheet(run) {
   const rows = Math.ceil(n / cols);
   cv.width = cols * cell;
   cv.height = rows * cell;
-  const ctx = cv.getContext("2d"), tile = document.createElement("canvas");
+  // the tiles go on an offscreen copy; the visible sheet is that copy plus the slider marks
+  const base = document.createElement("canvas");
+  base.width = cv.width;
+  base.height = cv.height;
+  const ctx = base.getContext("2d"), tile = document.createElement("canvas");
   ctx.fillStyle = "#000";
-  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillRect(0, 0, base.width, base.height);
   // optionally fade each piece by its share of what draws the picture (strongest = opaque)
   const byStrength = $("strengthInput").checked, cmax = contrib[order[0]] || 1;
   order.forEach((i, r) => {
@@ -593,7 +598,33 @@ function buildSheet(run) {
     ctx.drawImage(tile, (r % cols) * cell + 1, Math.floor(r / cols) * cell + 1, cell - 2, cell - 2);
   });
   ctx.globalAlpha = 1;
-  run.sheet = { order, cols, rows, contrib };
+  run.sheet = { order, cols, rows, contrib, base, cell };
+  drawSheetMarks(run, +$("scrub").value || run.n);
+}
+
+// Show which pieces are in the picture at the slider's position: those added so far get
+// an orange outline, the rest are dimmed, and the newest gets a white one.
+function drawSheetMarks(run, k) {
+  const sh = run.sheet;
+  if (!sh) return;
+  const ctx = $("sheet").getContext("2d"), c = sh.cell, all = k >= run.n;
+  ctx.drawImage(sh.base, 0, 0);
+  sh.order.forEach((i, r) => {
+    const x = (r % sh.cols) * c, y = Math.floor(r / sh.cols) * c;
+    if (i >= k) {
+      ctx.fillStyle = "rgba(11, 13, 18, 0.8)";
+      ctx.fillRect(x + 1, y + 1, c - 2, c - 2);
+    } else if (!all) {
+      ctx.strokeStyle = "#ffb86b";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x + 2.5, y + 2.5, c - 5, c - 5);
+    }
+    if (i === k - 1) {
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 5;
+      ctx.strokeRect(x + 3.5, y + 3.5, c - 7, c - 7);
+    }
+  });
 }
 
 // rank (position in the sheet, strongest first) under a pointer event, or -1
