@@ -4,11 +4,12 @@
 
 [![What are you made of? A picture rebuilt from 300 real images](web/og.png)](https://davidackerman.github.io/ePluribus/)
 
-ePluribus is a free online **photo mosaic maker** with a twist: it rebuilds any picture (a
-face, a pet, a landmark) from **300 real images** - craters on Mars and the Moon, galaxies and
-nebulae, retinas and stained cells, Earth from orbit, and paintings like Van Gogh's *Starry
-Night*. Unlike a regular photomosaic, every image covers the *whole* picture: they're stacked
-like light from 300 slide projectors. Then share it and see if your friends can guess what it is.
+ePluribus is a free online toy that rebuilds any picture (a face, a pet, a landmark) from
+**300 real images** - craters on Mars and the Moon, galaxies and nebulae, retinas and stained
+cells, Earth from orbit, and paintings like Van Gogh's *Starry Night*. It's **not a mosaic**:
+instead of tiling small photos side by side, every image covers the *whole* picture, layered
+like a 300-image multiple exposure (or 300 slide projectors on one screen). Then share it and
+see if your friends can guess what it is.
 
 - **Make one:** pick a picture, then pick your universe - 18 packs in five tabs (space,
   planets, Earth & nature, life & medicine, art), all on by default. Watch it assemble and get
