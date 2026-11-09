@@ -121,7 +121,7 @@ MAPS += [
     dict(id=210, key="clouds", name="Clouds", family="Earth", noDataBlack=True,  # gaps between orbits are black
          credit=f"NASA/NOAA (Suomi NPP VIIRS): the whole Earth on {GIBS_DAY}, via NASA GIBS",
          **gibs("VIIRS_SNPP_CorrectedReflectance_TrueColor", GIBS_DAY, 9, "jpeg")),
-    dict(id=211, key="mountains", name="Mountains in colour", family="landscapes", thumb_tile=(6, 47, 26),  # Everest
+    dict(id=211, key="mountains", name="Mountains in colour", family="landscapes", thumb_tile=(4, 11, 6),  # the Himalaya (colour shows at low zooms)
          credit="NASA/METI/AIST/Japan Spacesystems and the U.S./Japan ASTER Science Team: ASTER GDEM colour shaded relief, via NASA GIBS",
          **gibs("ASTER_GDEM_Color_Shaded_Relief", "default", 12, "jpeg")),
     dict(id=212, key="mercury", name="Mercury", family="Mercury",
@@ -227,6 +227,7 @@ PACK_DEFS = [
     ("webb_carina", "Carina nebula", "Webb's 'Cosmic Cliffs'", 203, "Carina nebula", "space"),
     ("hubble", "Hubble's greatest hits", "The 100 favourites, at full size", 204, "Hubble", "space"),
     ("webb", "Webb's greatest hits", "Every big Webb picture so far", 205, "Webb", "space"),
+    ("eso", "ESO's greatest hits", "Chile's giant telescopes: nebulae, galaxies, the Milky Way", 217, "ESO", "space"),
     ("nebulae", "Nebulae", "Crab, Helix, Orion, Pillars of Creation", "commons:nebulae", "nebulae", "space"),
     ("space", "Deep space", "Thousands of galaxies from Hubble", [0], "deep space", "space"),
     ("moon_map", "Moon: whole map", "Every crater, at any zoom (NASA LRO)", 200, "Moon", "planets"),
@@ -252,6 +253,10 @@ PACK_DEFS = [
     ("glow", "Glowing cells", "Fluorescence microscopy", [8, 9, 10, 11, 12], "glowing cells", "life"),
     ("head", "Head scans", "Slices through a human head", [13, 14], "head scans", "life"),
     ("paintings", "Famous paintings", "Van Gogh, Hokusai, Monet, Klimt...", "commons:paintings", "paintings", "art"),
+    ("landscape_paintings", "Landscape paintings", "Moran, Bierstadt, Friedrich, Aivazovsky, Monet", 220, "landscape paintings", "art"),
+    ("japanese_prints", "Japanese prints", "Hiroshige, Hasui, Koson", 218, "Japanese prints", "art"),
+    ("nature_plates", "Nature plates", "Audubon's birds, Haeckel, Redouté's flowers", 219, "nature plates", "art"),
+    ("abstract_art", "Abstract art", "Kandinsky, Hilma af Klint, ornament", 221, "abstract art", "art"),
     ("science_illustration", "Science illustration", "Haeckel's sea creatures, Audubon", "commons:science_illustration", "science art", "art"),
     ("patterns", "Patterns", "William Morris and ornament", "commons:patterns", "patterns", "art"),
 ]
@@ -453,10 +458,10 @@ def zoomify_count(W, H, ts):
 def esa_items(site, ids, skip):
     """ESA/Hubble or ESA/Webb images that have zoomable tiles and are observations (not charts,
     collages or artwork), at least 1000 px on the short side."""
-    www, cdn = {"hubble": ("esahubble.org", "cdn.esahubble.org"), "webb": ("esawebb.org", "cdn.esawebb.org")}[site]
+    site = ARCHIVES[site]
 
     def one(iid):
-        base = f"https://{cdn}/archives/images/zoomable/{iid}"
+        base = site["base"].format(iid)
         xml = fetch_ok(base + "/ImageProperties.xml")
         if not xml:
             return None
@@ -464,7 +469,7 @@ def esa_items(site, ids, skip):
         W, H, ts = (int(re.search(rf"""{k}\s*=\s*["'](\d+)["']""", xml, re.I).group(1)) for k in ("WIDTH", "HEIGHT", "TILESIZE"))
         if min(W, H) < 1000 or zoomify_count(W, H, ts) != int(re.search(r"""NUMTILES\s*=\s*["'](\d+)""", xml, re.I).group(1)):
             return None  # too small, or laid out other than the reader expects
-        page = f"https://{www}/images/{iid}/"
+        page = site["page"].format(iid)
         h = fetch_ok(page)  # ESA's pages take 5-20 s each, hence the threads
         if not h:
             return None
@@ -481,21 +486,34 @@ def esa_items(site, ids, skip):
         return [it for it in pool.map(one, [i for i in ids if i not in skip]) if it]
 
 
-def esa_top100(www):
-    ids = []
+# ESA/Hubble, ESA/Webb and ESO run the same archive software: zoomable images, image pages
+# with "Type: Observation" and a credit line, and a top-100 list
+ARCHIVES = {
+    "hubble": dict(page="https://esahubble.org/images/{}/", base="https://cdn.esahubble.org/archives/images/zoomable/{}",
+                   top="https://esahubble.org/images/archive/top100/", ids=r'href="/images/([a-z]+\d+[a-z])/"'),
+    "webb": dict(page="https://esawebb.org/images/{}/", base="https://cdn.esawebb.org/archives/images/zoomable/{}",
+                 top="https://esawebb.org/images/archive/top100/", ids=r'href="/images/([a-z]+\d+[a-z])/"'),
+    "eso": dict(page="https://www.eso.org/public/images/{}/", base="https://cdn.eso.org/images/zoomable/{}",
+                top="https://www.eso.org/public/images/archive/top100/", ids=r'href="/public/images/([a-z][a-z0-9-]*\d[a-z0-9-]*)/"'),
+}
+
+
+def esa_top100(site):
+    ids, a = [], ARCHIVES[site]
     for n in range(1, 6):
-        b = fetch_ok(f"https://{www}/images/archive/top100/" + (f"page/{n}/" if n > 1 else ""))
-        new = [i for i in re.findall(r'href="/images/([a-z]+\d+[a-z])/"', (b or b"").decode()) if i not in ids]
+        b = fetch_ok(a["top"] + (f"page/{n}/" if n > 1 else ""))
+        new = [i for i in re.findall(a["ids"], (b or b"").decode()) if i not in ids]
         if not new:
             break
         ids += new
     return ids
 
 
-hubble = esa_items("hubble", esa_top100("esahubble.org"), skip={"heic1502a"})[:100]  # the 100 favourites (Andromeda is a map of its own)
-webb_ids = esa_top100("esawebb.org") + [f"weic{y}{n:02d}a" for y in (22, 23, 24, 25) for n in range(1, 41)]
+hubble = esa_items("hubble", esa_top100("hubble"), skip={"heic1502a"})[:100]  # the 100 favourites (Andromeda is a map of its own)
+webb_ids = esa_top100("webb") + [f"weic{y}{n:02d}a" for y in (22, 23, 24, 25) for n in range(1, 41)]
 webb = esa_items("webb", list(dict.fromkeys(webb_ids)), skip={"weic2205a"})  # so is Carina
-print(f"Hubble: {len(hubble)} images, Webb: {len(webb)} images")
+eso = esa_items("eso", esa_top100("eso"), skip=set())[:150]
+print(f"Hubble: {len(hubble)} images, Webb: {len(webb)} images, ESO: {len(eso)} images")
 
 CELL_NAMES = {  # OpenOrganelle dataset -> what it is (different kinds first: the pack card shows three)
     "jrc_hela-2": "HeLa cell", "jrc_macrophage-2": "Macrophage (immune cell)", "jrc_jurkat-1": "Jurkat T cell",
@@ -539,6 +557,120 @@ def openorganelle_items():
     return items
 
 
+def commons_api(**kw):
+    q = urllib.parse.urlencode({"action": "query", "format": "json", **kw})
+    return json.loads(fetch(f"https://commons.wikimedia.org/w/api.php?{q}"))
+
+
+def commons_category_files(cat, depth):
+    """File titles in a Commons category and its subcategories down to `depth`, in order."""
+    files, seen, queue = [], set(), [(cat, 0)]
+    while queue:
+        c, d = queue.pop(0)
+        if c in seen:
+            continue
+        seen.add(c)
+        cont = {}
+        while True:
+            r = commons_api(list="categorymembers", cmtitle="Category:" + c, cmtype="file|subcat", cmlimit=500, **cont)
+            for m in r["query"]["categorymembers"]:
+                if m["ns"] == 6 and m["title"] not in files:
+                    files.append(m["title"])
+                elif m["ns"] == 14 and d < depth:
+                    queue.append((m["title"][9:], d + 1))
+            if "continue" not in r:
+                break
+            cont = {"cmcontinue": r["continue"]["cmcontinue"]}
+    return files
+
+
+# kept out of the art sets whatever their category says (safe for work)
+NOT_SFW = re.compile(r"nud|naked|erotic|shunga|breast|bath|undress|venus|odalisque|leda|sex|nymph|bacchant|toilet", re.I)
+# not the artwork itself: book-scan pages (Internet Archive / Flickr scans, text and title pages),
+# stamps, photos of studios, exhibitions and libraries, magazine pages
+NOT_ART = re.compile(r"\(\d{7,}\)\.\w+$|\bpage\b|\btext\b|title.page|stamp|\bCPA \d|MiNr|block of \d|atelier|studio|"
+                     r"exposition|exhibition|grand.palais|installation|folios|library|museum, \w+ \d{4}|sign on|обозрени|"
+                     r"drukproces|^File:Ohara Koson\.jpg$|^File:Hilma af klint \d+|Hilma af Klint - Eros\.|^(?!.*Tafel).*BHL\d+\.jpg$", re.I)
+
+
+# individual files found on review that aren't the artwork (a gallery room, a signature, covers...)
+SKIP_FILES = {
+    "File:Pictorial envelope for Hokusai's 36 views of Mount Fuji series LCCN2008661023.jpg",
+    "File:Haeckel Discomedusae 8 text2.JPG",
+    "File:UA030-17.jpg",
+    "File:Musée marmottant monet.jpg",
+    "File:Fragment back sign.jpg",
+    "File:USSR 1954-03-17 airmail cover.jpg",
+    "File:Haeckel Discomedusae 8 text1.JPG",
+    "File:Pictorial envelope for Hokusai's 36 views of Mount Fuji series LCCN2008661026.jpg",
+    "File:NDL-DC 2586550-02 Kawase Hasui.jpg",
+    "File:Print, illustrated book (BM 1859,0709.1920.1-100 1).jpg",
+    "File:The grammar of ornament MET NK1510 J7 1868 Q 002.jpg",
+}
+
+
+def commons_items(cats):
+    """Public-domain / CC0 images from Commons categories, as a live set's items: each is
+    fetched by the browser as a 960 px thumbnail. cats: (category, depth, how many)."""
+    per_cat = []
+    for cat, depth, n in cats:
+        titles = [t for t in commons_category_files(cat, depth) if not NOT_SFW.search(t) and not NOT_ART.search(t.replace("_", " "))]
+        got = []
+        batches, cur = [], []
+        for t in titles:  # up to 50 titles a request, and short enough for a URL
+            if cur and (len(cur) == 50 or len(urllib.parse.quote("|".join(cur + [t]))) > 6000):
+                batches.append(cur)
+                cur = []
+            cur.append(t)
+        batches += [cur] if cur else []
+        for batch in batches:
+            r = commons_api(prop="imageinfo|categories", titles="|".join(batch), iiprop="url|size|mime|extmetadata",
+                            iiurlwidth=960, iiextmetadatafilter="LicenseShortName|Artist|ObjectName", clshow="!hidden", cllimit="max")
+            for page in sorted(r["query"]["pages"].values(), key=lambda pg: pg["title"]):
+                ii = (page.get("imageinfo") or [None])[0]
+                if not ii or ii.get("mime") not in ("image/jpeg", "image/png", "image/tiff") or min(ii["width"], ii["height"]) < 800:
+                    continue
+                if max(ii["width"], ii["height"]) > 2 * min(ii["width"], ii["height"]):  # strips (triptychs, panoramas)
+                    continue
+                md = ii.get("extmetadata", {})
+                lic = strip_html(md.get("LicenseShortName", {}).get("value"))
+                if lic not in ("Public domain", "CC0") or any(NOT_SFW.search(c["title"]) for c in page.get("categories", [])):
+                    continue
+                name = object_name(md.get("ObjectName", {}).get("value")) or page["title"][5:].rsplit(".", 1)[0]
+                if NOT_SFW.search(name) or "thumbwidth" not in ii:
+                    continue
+                artist = strip_html(md.get("Artist", {}).get("value"))[:80]
+                got.append(dict(_title=page["title"], name=short_title(name), url=ii["thumburl"], width=ii["thumbwidth"], height=ii["thumbheight"],
+                                page=ii["descriptionurl"], thumb_url=ii["thumburl"],
+                                credit=f"{artist + ': ' if artist else ''}{short_title(name, 90)}. {lic}, via Wikimedia Commons"))
+        step = max(1, len(got) / n)  # an even spread through the category, not just its first files
+        # files rejected on review leave a gap (so the rest of the sample, already reviewed, stays put)
+        per_cat.append([it for it in (got[int(k * step)] for k in range(min(n, len(got)))) if it.pop("_title") not in SKIP_FILES])
+        print(f"  Commons {cat}: {len(got)} usable, {len(per_cat[-1])} taken")
+    # interleave, so a set's first images (its pack card) come from different categories
+    out = []
+    for k in range(max(map(len, per_cat))):
+        out += [c[k] for c in per_cat if k < len(c)]
+    return out[:256]
+
+
+COMMONS_SETS = [
+    dict(id=218, key="japanese_prints", name="Japanese prints", family="Japanese prints", cats=[
+        ("Ohara Koson", 0, 80), ("Kawase Hasui", 1, 70), ("One Hundred Famous Views of Edo", 1, 70), ("36 Views of Mount Fuji", 1, 36)]),
+    dict(id=219, key="nature_plates", name="Nature plates", family="nature plates", cats=[
+        ("The Birds of America", 0, 90), ("Kunstformen der Natur", 1, 90), ("Les liliacées", 1, 40), ("Les Roses (Redouté)", 0, 36)]),
+    dict(id=220, key="landscape_paintings", name="Landscape paintings", family="landscape paintings", cats=[
+        ("Paintings by Thomas Moran", 1, 60), ("Paintings by Albert Bierstadt", 1, 50), ("Paintings by Caspar David Friedrich", 1, 40),
+        ("Paintings by Ivan Aivazovsky", 1, 50), ("Water Lilies by Claude Monet", 1, 50)]),
+    dict(id=221, key="abstract_art", name="Abstract art", family="abstract art", cats=[
+        ("Abstract paintings by Wassily Kandinsky", 1, 100), ("Paintings by Hilma af Klint", 1, 60), ("The Grammar of Ornament", 2, 90)]),
+]
+commons_sets = []
+for cs in COMMONS_SETS:
+    items = commons_items(cs.pop("cats"))
+    print(f"Commons set {cs['key']}: {len(items)} images")
+    commons_sets.append(cs | {"kind": "image", "items": items})
+
 cells = openorganelle_items()
 print(f"OpenOrganelle: {len(cells)} EM volumes: {', '.join(it['name'] for it in cells)}")
 
@@ -546,7 +678,8 @@ SETS = XYZ_SETS + [
     dict(id=204, key="hubble", name="Hubble's greatest hits", kind="zoomify", family="Hubble", items=hubble),
     dict(id=205, key="webb", name="Webb's greatest hits", kind="zoomify", family="Webb", items=webb),
     dict(id=206, key="cells_em", name="Inside cells", kind="precomputed", family="cells (EM)", items=cells),
-]
+    dict(id=217, key="eso", name="ESO's greatest hits", kind="zoomify", family="ESO", items=eso),
+] + commons_sets
 # Share links name a set's images by position: keep the images already shipped where they
 # were (even ones gone from today's listing), and add new ones at the end.
 try:
@@ -571,6 +704,13 @@ for st in SETS:
         thumbs = [save_thumb(im, f"{st['key']}_{j}") for j, (_, im) in enumerate(cands)]
         for it in st["items"]:
             it.pop("_thumb_score", None)
+    if st["kind"] == "image":  # pictures: the three most colourful of the first fifteen (Hasler-Suesstrunk)
+        def colourful(im):
+            a = np.asarray(im.resize((128, 128)), dtype=float)
+            rg, yb = a[..., 0] - a[..., 1], (a[..., 0] + a[..., 1]) / 2 - a[..., 2]
+            return math.hypot(rg.std(), yb.std()) + 0.3 * math.hypot(rg.mean(), yb.mean())
+        cands = [Image.open(io.BytesIO(fetch(it["thumb_url"]))).convert("RGB") for it in st["items"][:15]]
+        thumbs = [save_thumb(im, f"{st['key']}_{j}") for j, im in enumerate(sorted(cands, key=colourful, reverse=True)[:3])]
     for it in st["items"] if not thumbs else []:  # the first three images that have a thumbnail
         b = fetch_ok(it["thumb_url"]) if "thumb_url" in it else None
         im = (Image.open(io.BytesIO(b)).convert("RGB") if b else busiest_tile(it) if "url" in it

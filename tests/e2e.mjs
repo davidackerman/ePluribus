@@ -150,7 +150,7 @@ await phone.waitForTimeout(400);
 log(`phone horizontal overflow px: ${await phone.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)}`);
 
 // live tile servers send some error pages without CORS headers (those tiles are skipped)
-const LIVE = /astro\.arcgis\.com|trek\.nasa\.gov|cdn\.esa(hubble|webb)\.org|gibs\.earthdata\.nasa\.gov|janelia-cosem-datasets/;
+const LIVE = /astro\.arcgis\.com|trek\.nasa\.gov|cdn\.esa(hubble|webb)\.org|cdn\.eso\.org|gibs\.earthdata\.nasa\.gov|janelia-cosem-datasets|upload\.wikimedia\.org/;
 const real = errors.filter((e) => !(/blocked by CORS policy/.test(e) && LIVE.test(e)) && !/console: .*net::ERR_FAILED/.test(e));
 log(real.length ? "ERRORS:\n" + real.join("\n") : "no unexpected console errors");
 await browser.close();

@@ -10,6 +10,8 @@
 //   zoomify      ESA/Hubble and ESA/Webb zoomable images
 //   precomputed  Neuroglancer volumes in JPEG chunks (OpenOrganelle EM): a tile is one plane
 //                through the middle of a chunk, across x-y, x-z or y-z
+//   image        one ordinary picture (Wikimedia Commons art, as a 960 px thumbnail): its only
+//                tile is the whole picture
 // A tile's address is { z, x, y, e }: zoom (or scale), tile (or chunk) column and row, and for
 // volumes e = chunk depth * 4 + axis. A piece's item = e * 256 + which image of a set.
 //
@@ -36,7 +38,8 @@ export function openMap(spec, item = 0) {
   const key = `${spec.id}:${splitItem(item).index}`;
   if (!opened.has(key)) {
     const s = itemSpec(spec, item);
-    const p = s.kind === "zoomify" ? openZoomify(s) : Promise.resolve(s.kind === "precomputed" ? openPrecomputed(s) : openXYZ(s));
+    const p = s.kind === "zoomify" ? openZoomify(s)
+      : Promise.resolve(s.kind === "precomputed" ? openPrecomputed(s) : s.kind === "image" ? openImage(s) : openXYZ(s));
     p.catch(() => opened.delete(key)); // let a failed open be retried
     opened.set(key, p);
   }
@@ -91,6 +94,17 @@ function image2d(spec, zooms, url) {
       return [{ z: q.z, x: Math.floor(rand() * q.nx), y: Math.floor(rand() * q.ny), e: 0 }];
     },
     fetch: (t) => fetchImage(tileUrl(t)),
+  };
+}
+
+// One picture: a single tile, the whole thing.
+function openImage(spec) {
+  const zooms = [{ z: 0, nx: 1, ny: 1 }], only = { z: 0, x: 0, y: 0, e: 0 };
+  return {
+    spec, zooms, sample: zooms, url: () => spec.url,
+    has: ({ z, x, y, e = 0 }) => z === 0 && x === 0 && y === 0 && e === 0,
+    pick: () => [only],
+    fetch: () => fetchImage(spec.url),
   };
 }
 
@@ -233,12 +247,18 @@ function distinct(n, k, rand) {
   return a.slice(0, k);
 }
 
-const PER_ITEM = 5; // a set spreads its tiles over a few random images, about this many each
+const PER_ITEM = 5;   // a set spreads its tiles over a few random images, about this many each
+const PICTURES = 4;   // a set of whole pictures (each ~150-300 KB) gives this many per build
+
+/** How many tiles a source fetches when asked for n (whole pictures are heavier than tiles). */
+export const tilesFor = (spec, n) => (spec.kind === "image" ? Math.min(n, PICTURES) : n);
 
 /** `count` random, usable tiles of a live source (random image of a set, random zoom,
  * random place): [{ item, z, x, y, w, h, rgb }]. */
 export async function gatherTiles(spec, count, rand, { onProgress, cancelled, concurrency = 6 } = {}) {
-  const items = spec.items ? distinct(spec.items.length, Math.min(spec.items.length, Math.ceil(count / PER_ITEM)), rand) : [0];
+  count = tilesFor(spec, count);
+  const per = spec.kind === "image" ? 1 : PER_ITEM;
+  const items = spec.items ? distinct(spec.items.length, Math.min(spec.items.length, Math.ceil(count / per)), rand) : [0];
   const got = [];
   await Promise.all(items.map(async (index, k) => {
     const want = Math.floor(count / items.length) + (k < count % items.length ? 1 : 0);
@@ -272,6 +292,11 @@ export async function gatherTiles(spec, count, rand, { onProgress, cancelled, co
 /** Downloads (and discards) n random tiles of one image of a live source, so a host's logs
  * don't show only the tiles a shared picture uses. */
 export async function fetchDecoys(spec, item, n, rand) {
+  if (spec.kind === "image") { // other random pictures of the set
+    const others = distinct(spec.items.length, Math.min(n, spec.items.length), rand).map((i) => spec.items[i].url);
+    await mapLimit(others, 4, (u) => fetch(u).then((r) => r.blob()).catch(() => null));
+    return;
+  }
   const map = await openMap(spec, item);
   const picks = [];
   while (picks.length < n) picks.push(...map.pick(rand).slice(0, 1));

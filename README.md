@@ -58,7 +58,7 @@ It must be served over HTTP (module scripts and workers don't load from `file://
 
 ## Image packs
 
-`tools/make_packs.py` builds `web/packs/` (31 packs; about 8.0 MB bundled, the rest streamed) from three kinds of source:
+`tools/make_packs.py` builds `web/packs/` (36 packs; about 8.0 MB bundled, the rest streamed) from three kinds of source:
 
 - **scikit-image's science samples:** Hubble deep field, Moon, retina, cornea, tissue stains,
   fluorescent cells, head scans.
@@ -67,7 +67,7 @@ It must be served over HTTP (module scripts and workers don't load from `file://
   Earth from orbit, landscapes, oceans, planets, nebulae. They were reviewed by eye (safe for
   work; no duplicates, charts or photos of people), and the builder re-checks at build time
   that every one is still public domain or CC0.
-- **Live sources** (below): 17 of them, 334 huge images and maps in all.
+- **Live sources** (below): 22 of them, 1304 images and maps in all.
 
 Each build uses up to 4 random images per pack, so no two builds are alike and downloads stay
 small. Image and map ids in `packs.json`, and the order of a live set's images, are part of the
@@ -84,7 +84,8 @@ read tile by tile from their hosts (all of which allow it from a web page), as i
 | --- | --- |
 | Moon, Mars, Mercury, Moon heights, Mars in colour, Jupiter's moons (Europa, Ganymede, Callisto), small worlds (Vesta, Ceres, Phobos) | global mosaics via [NASA Trek](https://trek.nasa.gov) (Mars CTX via Esri) |
 | Earth by day, Earth at night, Clouds, Ocean temperatures, Mountains in colour | NASA [GIBS](https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api) Earth layers |
-| Andromeda, Carina nebula, Hubble's greatest hits (100 images), Webb's greatest hits (206 images) | ESA/Hubble and ESA/Webb zoomable archives (CC BY 4.0) |
+| Andromeda, Carina nebula, Hubble's greatest hits (100 images), Webb's greatest hits (206 images), ESO's greatest hits (56 images) | ESA/Hubble, ESA/Webb and ESO zoomable archives (CC BY 4.0) |
+| Landscape paintings, Japanese prints, Nature plates, Abstract art (914 pictures) | Wikimedia Commons, streamed as 960 px thumbnails: public-domain files from hand-picked categories (Moran, Bierstadt, Friedrich, Aivazovsky, Monet's water lilies; Hiroshige, Hasui, Koson; Audubon, Haeckel, Redouté; Kandinsky, Hilma af Klint, Owen Jones), with keyword screens (safe for work; no book pages, stamps or photos of studios) and every picture checked by eye |
 | Inside cells (9 electron-microscope volumes: HeLa, macrophage, Jurkat T cell, breast cancer cell, mouse pancreas, choroid plexus, more HeLa) | Janelia's [OpenOrganelle](https://openorganelle.janelia.org) (CC BY 4.0), the JPEG Neuroglancer copies |
 
 Each build shares about 320 random tiles among the selected sources (random image of a set,
@@ -181,6 +182,9 @@ GitHub Pages serves that branch.
   each image's own credit line shown in the app.
 - **OpenOrganelle** (Janelia Research Campus, COSEM Project Team): CC BY 4.0, credited per
   volume.
+- **ESO:** CC BY 4.0, each image's credit shown in the app.
+- **Streamed Commons art:** public domain (checked per file when the packs are built), each
+  credited with its artist and Commons page.
 - **Mars CTX mosaic:** free for all uses with the credit "NASA/JPL/MSSS/The Murray Lab".
 - **Wikimedia Commons picks:** public domain or CC0; each credit (artist, title, source page)
   is in `packs.json` and shown under every picture made with it.

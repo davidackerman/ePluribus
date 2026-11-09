@@ -6,7 +6,7 @@ import {
   encodeRecipe, decodeRecipe, mulberry32,
 } from "./core.js";
 import { encodeGif } from "./gif.js";
-import { openMap, gatherTiles, fetchTile, fetchDecoys, mapLimit, itemSpec, splitItem } from "./maps.js";
+import { openMap, gatherTiles, fetchTile, fetchDecoys, mapLimit, itemSpec, splitItem, tilesFor } from "./maps.js";
 import { findStore, storeRecipe, loadRecipe } from "./share.js";
 import { startStats, track } from "./stats.js";
 
@@ -102,7 +102,8 @@ async function gatherSources(run) {
     if (use.length) groups.push(await Promise.all(use.map(catalogSource)));
   }
   const maps = packs.filter((q) => q.map != null);
-  const perMap = Math.max(12, Math.round(TILE_BUDGET / Math.max(1, maps.length))), total = perMap * maps.length;
+  const perMap = Math.max(12, Math.round(TILE_BUDGET / Math.max(1, maps.length)));
+  const total = maps.reduce((n, p) => n + tilesFor(state.mapById.get(p.map), perMap), 0);
   const counts = maps.map(() => 0);
   const report = () => {
     const k = counts.reduce((a, b) => a + b, 0);
@@ -783,6 +784,7 @@ const FAMILY_COLORS = {
   paintings: "#f472b6", "science art": "#34d399", patterns: "#fb923c",
   Hubble: "#93c5fd", Webb: "#f9a8d4", "cells (EM)": "#d6d3d1", Mercury: "#b8a48c", Europa: "#e7d7b0",
   Ganymede: "#a8a29e", Callisto: "#78716c", Vesta: "#d4d4d8", Ceres: "#9ca3af", Phobos: "#a16207",
+  ESO: "#a78bfa", "Japanese prints": "#f87171", "nature plates": "#86efac", "landscape paintings": "#fde68a", "abstract art": "#f0abfc",
 };
 
 function chip(text, color) {
