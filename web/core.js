@@ -191,8 +191,12 @@ export function atomBytes(src, x, y, s, o, R, C, neutral = false) {
 export class PoolBuilder {
   // weights: how often each source is picked (default: by area, capped at 512 x 512)
   // neutral: one black level for all channels (colour comes only from the images)
-  constructor({ sources, count, C, seed = 1, weights = null, neutral = false }) {
-    Object.assign(this, { sources, count, C, D: C * NN, done: 0, neutral });
+  // minFrac: each crop's side is at least this fraction of its image's shorter side
+  //          (0: any size down to MIN_CROP; 1: the largest square, i.e. no zooming in)
+  // rotate:  allow the 8 turns/flips (false: every piece upright and unflipped)
+  constructor({ sources, count, C, seed = 1, weights = null, neutral = false, minFrac = 0, rotate = true }) {
+    Object.assign(this, { sources, count, C, D: C * NN, done: 0, neutral, minFrac, rotate, exhausted: false });
+    this.seen = new Set(); // no duplicate crops (matters when the settings leave few choices)
     this.pool = new Uint8Array(count * this.D);
     this.norms = new Float32Array(count);
     this.params = new Int32Array(count * 5); // source index, x, y, s, orient
@@ -205,30 +209,39 @@ export class PoolBuilder {
     this.scratch = new Float32Array(3 * NN);
   }
 
-  step(n) { // build up to n more pieces; true when finished
+  // build up to n more pieces; true when finished (or when no new usable crops can be
+  // found - then `done` is how many there are)
+  step(n) {
     const end = Math.min(this.count, this.done + n);
-    while (this.done < end) this._one(this.done++);
-    return this.done >= this.count;
+    while (this.done < end && !this.exhausted) {
+      if (this._one(this.done)) this.done++;
+      else this.exhausted = true;
+    }
+    return this.done >= this.count || this.exhausted;
   }
 
   _one(slot) {
     const rand = this.rand;
-    for (let attempt = 0; attempt < 20; attempt++) {
+    for (let attempt = 0; attempt < 40; attempt++) {
       const r = rand();
       let si = 0;
       while (si < this.cum.length - 1 && r > this.cum[si]) si++;
       const src = this.sources[si], ms = Math.min(src.w, src.h);
-      const s = ms <= MIN_CROP ? ms : MIN_CROP + Math.floor(rand() * (ms - MIN_CROP + 1));
+      const smin = Math.min(ms, Math.max(MIN_CROP, Math.round(this.minFrac * ms)));
+      const s = smin >= ms ? ms : smin + Math.floor(rand() * (ms - smin + 1));
       const x = Math.floor(rand() * (src.w - s + 1)), y = Math.floor(rand() * (src.h - s + 1));
-      const o = Math.floor(rand() * 8);
+      const o = this.rotate ? Math.floor(rand() * 8) : 0;
+      const key = `${si}:${x}:${y}:${s}:${o}`;
+      if (this.seen.has(key)) continue;
       makeAtom(src, x, y, s, o, N, this.C, this.tmp, this.scratch);
       const { norm } = quantizeInto(this.tmp, this.C, this.pool, slot * this.D, this.neutral);
-      if (norm >= MIN_NORM || attempt === 19) {
-        this.norms[slot] = Math.max(norm, 1e-6);
-        this.params.set([si, x, y, s, o], slot * 5);
-        return;
-      }
+      if (norm < MIN_NORM) continue;
+      this.seen.add(key);
+      this.norms[slot] = norm;
+      this.params.set([si, x, y, s, o], slot * 5);
+      return true;
     }
+    return false;
   }
 }
 

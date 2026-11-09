@@ -17,7 +17,11 @@ see if your friends can guess what it is.
 - **Share it:** a share link replays the build image by image; your friend taps *I got it!*
   the moment they recognise it, and can share their score back. There's also a built-in round
   to try (a famous face).
-- **Explore:** fade all the pieces by how much each one adds, or tap any piece to see it full
+- **Advanced settings:** images to stack, colour, how many candidates, and two ways to make it
+  harder: each piece must show at least a quarter / half / all of its image (no zooming into
+  tiny details), and no turning or flipping. The defaults allow any crop, turned any way.
+- **Explore:** the pieces grid follows the slider (in the order the pieces were added, or
+  strongest first); fade all the pieces by how much each one adds, or tap any piece to see it full
   size, the picture without it, and - for map pieces - the exact spot on Mars or the Moon in
   [coresample](https://davidackerman.github.io/coresample/).
 - **Save and post:** an animated GIF (Share GIF / Download GIF), the picture exactly as shown

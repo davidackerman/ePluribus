@@ -114,6 +114,21 @@ if (C === 3) {
   check(maxN < 1e-4, `neutral picture rebuilt from its recipe matches the fit (max diff ${maxN.toExponential(1)})`);
 }
 
+// ---- harder settings: big crops only, no turning
+{
+  const pbH = new PoolBuilder({ sources, count: 1500, C, seed: 3, minFrac: 0.5, rotate: false });
+  pbH.step(1500);
+  let ok = pbH.done > 0;
+  for (let j = 0; j < pbH.done; j++) {
+    const [si, , , s, o] = pbH.params.subarray(j * 5, j * 5 + 5), src = sources[si];
+    if (o !== 0 || s < Math.min(Math.round(0.5 * Math.min(src.w, src.h)), Math.min(src.w, src.h))) ok = false;
+  }
+  check(ok, `minFrac 0.5 + no turning: all ${pbH.done} crops are at least half their image and upright`);
+  const one = new PoolBuilder({ sources: [sources[1]], count: 50, C, seed: 4, minFrac: 1, rotate: false });
+  one.step(50);
+  check(one.exhausted && one.done === 1, `whole image only + no turning, one square image: exactly ${one.done} distinct piece (no duplicates)`);
+}
+
 // malformed recipes must be rejected, not crash
 let rejected = 0;
 for (const bad of ["", "AAAA", code.slice(0, -7), "!!!!"]) { try { decodeRecipe(bad); } catch { rejected++; } }

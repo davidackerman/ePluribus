@@ -150,7 +150,14 @@ select { font: inherit; background: var(--button); color: var(--text); border: 1
 .actions { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
 .actions button { width: 100%; }
 
-.sheetToggle { margin: 0 0 10px; }
+.sheetToggle { margin: 0; }
+.sheetControls { margin: 0 0 10px; gap: 16px; }
+.select.small select { font-size: 13px; padding: 3px 8px; }
+details.advanced { margin-top: 12px; }
+details.advanced > summary { color: var(--muted); font-weight: 600; }
+details.advanced[open] > summary { margin-bottom: 4px; }
+details.advanced .select { margin: 8px 0; }
+.advNote { margin: 14px 0 4px; max-width: 70ch; }
 .sheetWrap { position: relative; }
 #sheet { width: 100%; display: block; border-radius: 10px; background: #000; cursor: pointer; }
 .tip { position: absolute; pointer-events: none; background: rgba(0, 0, 0, 0.85); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; font-size: 12px; max-width: 250px; }

@@ -110,11 +110,18 @@
 
       <section class="card">
         <h2><span class="num">3</span> Make it</h2>
-        <label class="slider">Images to stack: <b id="kLabel">300</b>
-          <input type="range" id="kInput" min="20" max="500" step="10" value="300"></label>
         <div class="row">
-          <label class="toggle"><input type="checkbox" id="colourInput" checked> Colour</label>
-          <label class="toggle" title="On: only the images' own colours, each image just brighter or dimmer. Off: also nudges the whole picture toward your photo's overall colour."><input type="checkbox" id="pureInput" checked> <span>Colour only from the images <span class="muted small">(no overall tint)</span></span></label>
+          <button id="buildBtn" class="primary big" disabled>Make it!</button>
+          <span id="buildHint" class="muted small">Pick a picture first.</span>
+        </div>
+        <details class="advanced">
+          <summary>Advanced settings</summary>
+          <label class="slider">Images to stack: <b id="kLabel">300</b>
+            <input type="range" id="kInput" min="20" max="500" step="10" value="300"></label>
+          <div class="row">
+            <label class="toggle"><input type="checkbox" id="colourInput" checked> Colour</label>
+            <label class="toggle" title="On: only the images' own colours, each image just brighter or dimmer. Off: also nudges the whole picture toward your photo's overall colour."><input type="checkbox" id="pureInput" checked> <span>Colour only from the images <span class="muted small">(no overall tint)</span></span></label>
+          </div>
           <label class="select">Search through
             <select id="poolInput">
               <option value="4000">4,000 pieces (fast)</option>
@@ -122,11 +129,17 @@
               <option value="16000">16,000 pieces (sharpest)</option>
             </select>
           </label>
-        </div>
-        <div class="row">
-          <button id="buildBtn" class="primary big" disabled>Make it!</button>
-          <span id="buildHint" class="muted small">Pick a picture first.</span>
-        </div>
+          <p class="muted small advNote"><b>Make it harder:</b> by default a piece can be any part of an image, zoomed in and turned. These make each piece show more of its image as it really is, so the images themselves have to do the work (the picture gets softer).</p>
+          <label class="select">Each piece shows
+            <select id="pieceInput">
+              <option value="0" selected>any part, at any zoom</option>
+              <option value="0.25">at least a quarter of its image</option>
+              <option value="0.5">at least half of its image</option>
+              <option value="1">its whole image (no zooming in)</option>
+            </select>
+          </label>
+          <label class="toggle"><input type="checkbox" id="rotateInput" checked> Turn and flip pieces</label>
+        </details>
       </section>
     </div>
 
@@ -177,8 +190,16 @@
       </div>
 
       <div id="sheetBlock" hidden>
-        <h3>All the pieces <span class="muted small">strongest first. Drag the slider and the ones in the picture so far light up. Tap any one to see what it adds, and where in the universe it came from.</span></h3>
-        <label class="toggle small sheetToggle"><input type="checkbox" id="strengthInput"> <span>Fade each piece by how much it adds <span class="muted">(bright = a lot, faint = a little)</span></span></label>
+        <h3>All the pieces <span class="muted small">Drag the slider and the ones in the picture so far light up. Tap any one to see what it adds, and where in the universe it came from.</span></h3>
+        <div class="row sheetControls">
+          <label class="select small">Order
+            <select id="sheetOrder">
+              <option value="added" selected>as added (follows the slider)</option>
+              <option value="strength">strongest first</option>
+            </select>
+          </label>
+          <label class="toggle small sheetToggle"><input type="checkbox" id="strengthInput"> <span>Fade each piece by how much it adds <span class="muted">(bright = a lot, faint = a little)</span></span></label>
+        </div>
         <div class="sheetWrap"><canvas id="sheet"></canvas><div id="sheetTip" class="tip" hidden></div></div>
       </div>
 

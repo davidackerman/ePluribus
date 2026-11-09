@@ -436,7 +436,7 @@ function showAdding(run, i) {
   drawBytes($("addingCanvas"), run.atoms64[i].u8, run.C, N);
   // once the build is done: fade it by what it actually contributed, and say how much
   const fade = sheet && $("strengthInput").checked;
-  $("addingCanvas").style.opacity = fade ? String(Math.max(0.06, sheet.contrib[i] / (sheet.contrib[sheet.order[0]] || 1))) : "1";
+  $("addingCanvas").style.opacity = fade ? String(Math.max(0.06, sheet.contrib[i] / (sheet.contrib[sheet.byStrength[0]] || 1))) : "1";
   const box = $("addingLabel");
   box.replaceChildren();
   const a = document.createElement("div"), b = document.createElement("div");
@@ -452,7 +452,8 @@ async function build() {
   if (state.run) state.run.cancelled = true;
   state.busy = true;
   updateBuildButton();
-  const C = $("colourInput").checked ? 3 : 1, K = +$("kInput").value, P = +$("poolInput").value;
+  const C = $("colourInput").checked ? 3 : 1, K = +$("kInput").value, want = +$("poolInput").value;
+  const minFrac = +$("pieceInput").value, rotate = $("rotateInput").checked; // advanced: make it harder
   const neutral = C === 3 && $("pureInput").checked; // colour only from the images: one shared black level
   const run = { C, K, replay: false, cancelled: false, pieces: [], order: [], wHist: [], atoms64: [] };
   state.run = run;
@@ -466,14 +467,17 @@ async function build() {
     run.shareable = sources.every((s) => !s.own);
 
     run.neutral = neutral;
-    const pb = new PoolBuilder({ sources, weights, count: P, C, neutral, seed: (Math.random() * 2 ** 31) | 0 });
+    const pb = new PoolBuilder({ sources, weights, count: want, C, neutral, minFrac, rotate, seed: (Math.random() * 2 ** 31) | 0 });
     while (!pb.step(250)) {
-      setStatus(`Cutting ${pb.done.toLocaleString()} of ${P.toLocaleString()} crops…`);
-      setProgress((pb.done / P) * 0.1);
+      setStatus(`Cutting ${pb.done.toLocaleString()} of ${want.toLocaleString()} crops…`);
+      setProgress((pb.done / want) * 0.1);
       await nextFrame();
       if (run.cancelled) throw new Error("stopped");
     }
 
+    // strict settings can leave fewer distinct crops than asked for
+    const P = pb.done;
+    if (!P) throw new Error("no usable pieces with these settings");
     const D = C * N * N, W = workerCount(), per = Math.ceil(P / W), workers = [];
     run.workers = workers;
     for (let i = 0; i < W; i++) {
@@ -633,7 +637,11 @@ function centeredNorm(u8, mean, C) {
 function buildSheet(run) {
   const cv = $("sheet"), n = run.n, cell = 66;
   const contrib = run.atoms64.map((a, i) => run.wFinal[i] * centeredNorm(a.u8, a.mean, run.C));
-  const order = [...Array(n).keys()].sort((a, b) => contrib[b] - contrib[a]);
+  const byStrength = [...Array(n).keys()].sort((a, b) => contrib[b] - contrib[a]);
+  const strengthRank = new Int32Array(n);
+  byStrength.forEach((i, r) => { strengthRank[i] = r; });
+  // shown either in the order the pieces were added (what the slider follows) or strongest first
+  const order = $("sheetOrder").value === "strength" ? byStrength : [...Array(n).keys()];
   const cols = Math.max(5, Math.min(20, Math.floor((cv.parentElement.clientWidth || 600) / 44)));
   const rows = Math.ceil(n / cols);
   cv.width = cols * cell;
@@ -646,14 +654,14 @@ function buildSheet(run) {
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, base.width, base.height);
   // optionally fade each piece by its share of what draws the picture (strongest = opaque)
-  const byStrength = $("strengthInput").checked, cmax = contrib[order[0]] || 1;
+  const fade = $("strengthInput").checked, cmax = contrib[byStrength[0]] || 1;
   order.forEach((i, r) => {
     drawBytes(tile, run.atoms64[i].u8, run.C, N);
-    ctx.globalAlpha = byStrength ? Math.max(0.06, contrib[i] / cmax) : 1;
+    ctx.globalAlpha = fade ? Math.max(0.06, contrib[i] / cmax) : 1;
     ctx.drawImage(tile, (r % cols) * cell + 1, Math.floor(r / cols) * cell + 1, cell - 2, cell - 2);
   });
   ctx.globalAlpha = 1;
-  run.sheet = { order, cols, rows, contrib, base, cell };
+  run.sheet = { order, byStrength, strengthRank, cols, rows, contrib, base, cell };
   drawSheetMarks(run, +$("scrub").value || run.n);
 }
 
@@ -694,12 +702,15 @@ function sheetRankAt(e) {
 
 function wireSheet() {
   const cv = $("sheet"), tip = $("sheetTip");
-  cv.addEventListener("click", (e) => { const idx = sheetRankAt(e); if (idx >= 0) openPiece(idx); });
+  cv.addEventListener("click", (e) => {
+    const idx = sheetRankAt(e), sh = state.run?.sheet;
+    if (idx >= 0) openPiece(sh.strengthRank[sh.order[idx]]);
+  });
   const show = (e) => {
     const run = state.run, idx = sheetRankAt(e);
     if (idx < 0) { tip.hidden = true; return; }
     const i = run.sheet.order[idx], p = run.pieces[i];
-    tip.textContent = `#${idx + 1} strongest, added ${ordinal(i + 1)}: ${p.src.title}, ${p.s} px crop. Click for more.`;
+    tip.textContent = `Added ${ordinal(i + 1)}, #${run.sheet.strengthRank[i] + 1} by strength: ${p.src.title}, ${p.s} px crop. Click for more.`;
     tip.hidden = false;
     const pr = cv.parentElement.getBoundingClientRect();
     tip.style.left = `${Math.min(e.clientX - pr.left + 12, pr.width - 250)}px`;
@@ -773,7 +784,7 @@ function openPiece(rank) {
   const run = state.run;
   if (!run?.sheet) return;
   dlgRank = Math.max(0, Math.min(run.n - 1, rank));
-  const i = run.sheet.order[dlgRank], p = run.pieces[i];
+  const i = run.sheet.byStrength[dlgRank], p = run.pieces[i];
   const total = run.sheet.contrib.reduce((a, b) => a + b, 0) || 1;
   drawBytes($("dlgPiece"), run.hi[i].u8, run.C, HI);
   $("dlgWithout").checked = false;
@@ -796,7 +807,7 @@ function openPiece(rank) {
 }
 
 function drawDialogPicture() {
-  const run = state.run, i = run.sheet.order[dlgRank], w = Float32Array.from(run.wFinal), without = $("dlgWithout").checked;
+  const run = state.run, i = run.sheet.byStrength[dlgRank], w = Float32Array.from(run.wFinal), without = $("dlgWithout").checked;
   if (without) w[i] = 0;
   drawFloat($("dlgPicture"), renderSum(run.hi, w, run.n, run.C, HI, run.tmean), run.C, HI);
   $("dlgPictureCap").textContent = without ? "The picture without it" : "The whole picture";
@@ -986,7 +997,7 @@ async function makeGif() {
     const toCanvas = (draw) => { const c = document.createElement("canvas"); draw(c); return c; };
 
     // strongest first: partial stacks use the final brightnesses, contrast-matched
-    const order = run.sheet.order, contrib = run.sheet.contrib, cmax = contrib[order[0]] || 1;
+    const order = run.sheet.byStrength, contrib = run.sheet.contrib, cmax = contrib[order[0]] || 1;
     const hiC = order.map((i) => run.hi[i]), wC = order.map((i) => run.wFinal[i]);
     const picture = (k) => toCanvas((c) => drawFloat(c, renderSum(hiC, wC, k, C, HI, run.tmean, { matchStd: k < n ? run.finalStd : 0 }), C, HI));
     const small = order.map((i) => toCanvas((c) => drawBytes(c, run.atoms64[i].u8, C, N)));
@@ -1236,7 +1247,11 @@ async function init() {
   $("colourInput").addEventListener("change", () => { $("pureInput").disabled = !$("colourInput").checked; scheduleCrop(); });
   $("buildBtn").addEventListener("click", build);
   $("stopBtn").addEventListener("click", () => { if (state.run) state.run.cancelled = true; });
-  $("scrub").addEventListener("input", () => { if (state.run) state.run.playing = false; scheduleRender(); });
+  const stopPlaying = () => { if (state.run?.playing) state.run.playing = false; };
+  $("scrub").addEventListener("pointerdown", stopPlaying);
+  $("scrub").addEventListener("keydown", stopPlaying);
+  $("scrub").addEventListener("input", () => { stopPlaying(); scheduleRender(); });
+  $("sheetOrder").addEventListener("change", () => { if (state.run?.sheet) buildSheet(state.run); });
   $("strengthInput").addEventListener("change", () => {
     if (!state.run?.sheet) return;
     buildSheet(state.run);
