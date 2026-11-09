@@ -2,14 +2,15 @@
 
 **[Play it: davidackerman.github.io/ePluribus](https://davidackerman.github.io/ePluribus/)**
 
-[![What are you made of? A picture rebuilt from 300 real science images](web/og.png)](https://davidackerman.github.io/ePluribus/)
+[![What are you made of? A picture rebuilt from 300 real images](web/og.png)](https://davidackerman.github.io/ePluribus/)
 
-Turn any picture (a face, a pet, a landmark) into **300 real science images** (Martian
-craters, galaxies, retinas, stained cells) stacked as light, then dare your friends to guess
+Turn any picture (a face, a pet, a landmark) into **300 real images** (Martian craters,
+galaxies, retinas, stained cells, Van Gogh) stacked as light, then dare your friends to guess
 what it is.
 
-- **Make one:** pick a picture, pick your universe (live maps of the Moon and Mars, Hubble's
-  Andromeda, Webb's Carina nebula, microscopy...), watch it assemble. You get a breakdown
+- **Make one:** pick a picture, pick your universe (18 packs in five tabs - space, planets,
+  Earth & nature, life & medicine, art - from live maps of the Moon and Mars to Van Gogh and
+  Haeckel's sea creatures, all on by default), watch it assemble. You get a breakdown
   like *"37% tissue · 26% Moon · 13% Andromeda · 13% Mars · 11% eyes"*.
 - **Dare a friend:** a short link replays the build from the strongest piece; they tap
   *I got it!* and get a score to beat. Or play the built-in round (a famous face).
@@ -19,7 +20,7 @@ what it is.
 - **Private by design:** everything runs in the browser; the photo is never uploaded, and
   share links carry only which public pieces to stack (encrypted, for short links).
 
-How it works: every piece is a square crop of a science image stretched to cover the *whole*
+How it works: every piece is a square crop of a real image stretched to cover the *whole*
 frame. Pieces are chosen greedily (non-negative matching pursuit): each step adds the crop
 that best fills in what's still missing, then re-solves every piece's brightness (weights
 >= 0, like slide projectors on one screen). One black level per colour channel removes the
@@ -34,6 +35,15 @@ python3 -m http.server 8765 --directory web
 
 It must be served over HTTP (module scripts and workers don't load from `file://`).
 Everything runs in the browser: the photo is never uploaded.
+
+## Image packs
+
+`tools/make_packs.py` builds `web/packs/` (18 packs, ~7.6 MB): scikit-image's science samples,
+the live maps below, and 64 images from Wikimedia Commons listed in `tools/commons_picks.json`
+(paintings, science illustration, patterns, Earth from orbit, landscapes, oceans, planets,
+nebulae). The Commons picks were reviewed by eye (safe for work, no duplicates or charts), and
+the builder re-checks at build time that every one is still public domain or CC0. Each build
+uses up to 4 random images per pack, so builds differ and downloads stay small.
 
 ## Live maps
 

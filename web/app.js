@@ -17,6 +17,7 @@ const DL = 512;          // download resolution
 const MAX_SIDE = 1024;   // photos and own images are scaled down to this
 const LUMA = [0.2125, 0.7154, 0.0721];
 const TILE_BUDGET = 320; // random map tiles fetched per build, shared by the selected maps
+const MAX_PER_PACK = 4;  // bundled images used per pack per build (a random few: fresh mix, small download)
 const SAMPLES = {
   mona: { url: "samples/mona.jpg", crop: { x: 117, y: 67, s: 367 } },
   astronaut: { url: "samples/astronaut.jpg", crop: { x: 155, y: 15, s: 200 } },
@@ -31,7 +32,8 @@ const state = {
   mapById: new Map(),
   familyByImg: new Map(), // bundled image id -> short name, as in "37% Mars"
   store: "",              // short-link store ("" = none)
-  selected: new Set(["moon_map", "mars_map", "andromeda", "eyes", "tissue"]),
+  selected: new Set(),    // pack ids; everything is on by default (see init)
+  tab: "all",
   own: [],
   ownCounter: 0,
   target: null,     // { src, w, h, canvas, crop: {x, y, s} }
@@ -83,13 +85,18 @@ function tileSource(spec, t) {
 // Every selected pack (and the user's own images) gets an equal share of the candidates;
 // within a pack, bigger images get more.
 async function gatherSources(run) {
-  const groups = [], seenImg = new Set(), packs = selectedPacks();
-  for (const p of packs.filter((q) => !q.map)) {
+  const groups = [], seenImg = new Set(), packs = selectedPacks(), rand = mulberry32((Math.random() * 2 ** 31) | 0);
+  const local = packs.filter((q) => !q.map);
+  for (const [pi, p] of local.entries()) {
     const ids = p.images.filter((i) => !seenImg.has(i));
-    ids.forEach((i) => seenImg.add(i));
-    if (ids.length) groups.push(await Promise.all(ids.map(catalogSource)));
+    for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    const use = ids.slice(0, MAX_PER_PACK);
+    use.forEach((i) => seenImg.add(i));
+    setStatus(`Loading ${p.name}\u2026`);
+    setProgress((pi / local.length) * 0.03);
+    if (use.length) groups.push(await Promise.all(use.map(catalogSource)));
   }
-  const maps = packs.filter((q) => q.map != null), rand = mulberry32((Math.random() * 2 ** 31) | 0);
+  const maps = packs.filter((q) => q.map != null);
   const perMap = Math.max(40, Math.round(TILE_BUDGET / Math.max(1, maps.length)));
   for (const [mi, p] of maps.entries()) {
     const spec = state.mapById.get(p.map);
@@ -237,10 +244,41 @@ function wireCrop() {
 }
 
 /* ------------------------------------------------------------ step 2: sources */
+function renderTabs() {
+  const bar = $("packTabs");
+  bar.replaceChildren();
+  for (const t of [{ id: "all", name: "All" }, ...(state.catalog.tabs || [])]) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tab";
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", String(state.tab === t.id));
+    const inTab = state.catalog.packs.filter((p) => t.id === "all" || p.tab === t.id);
+    const on = inTab.filter((p) => state.selected.has(p.id)).length;
+    const count = document.createElement("span");
+    count.textContent = `${on}/${inTab.length}`;
+    b.append(t.name, " ", count);
+    b.addEventListener("click", () => { state.tab = t.id; renderPacks(); });
+    bar.append(b);
+  }
+  const tabPacks = state.catalog.packs.filter((p) => state.tab === "all" || p.tab === state.tab);
+  const allOn = tabPacks.every((p) => state.selected.has(p.id));
+  const toggle = $("packAll");
+  toggle.textContent = allOn ? "Switch these off" : "Switch these on";
+  toggle.onclick = () => {
+    for (const p of tabPacks) { if (allOn) state.selected.delete(p.id); else state.selected.add(p.id); }
+    renderPacks();
+    updateBuildButton();
+  };
+  const total = state.catalog.packs.length, on = state.selected.size;
+  $("packSummary").textContent = on === total ? `All ${total} packs are on. Tap any to switch it off.` : `${on} of ${total} packs on.`;
+}
+
 function renderPacks() {
+  renderTabs();
   const grid = $("packGrid");
   grid.replaceChildren();
-  for (const p of state.catalog.packs) {
+  for (const p of state.catalog.packs.filter((q) => state.tab === "all" || q.tab === state.tab)) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "pack";
@@ -262,6 +300,7 @@ function renderPacks() {
     b.addEventListener("click", () => {
       if (state.selected.has(p.id)) state.selected.delete(p.id); else state.selected.add(p.id);
       b.setAttribute("aria-pressed", String(state.selected.has(p.id)));
+      renderTabs();
       updateBuildButton();
     });
     grid.append(b);
@@ -455,7 +494,7 @@ async function finishBuild(run) {
     }
   }
   setProgress(1);
-  setStatus(`Done! ${n} science images, stacked as light.` + (run.stalled ? " (Stopped early: no image left would add light in the right places.)" : ""));
+  setStatus(`Done! ${n} real images, stacked as light.` + (run.stalled ? " (Stopped early: no image left would add light in the right places.)" : ""));
   run.finalStd = stdOf(renderSum(run.hi, run.wFinal, n, C, HI, run.tmean), C, run.tmean);
   setupScrub(run, n);
   renderAt(n);
@@ -626,6 +665,8 @@ function compositionText(run, max = 5) {
 const FAMILY_COLORS = {
   Moon: "#c9ccd6", Mars: "#ff7a59", Andromeda: "#8ab4ff", "Carina nebula": "#ff6bd6", "deep space": "#6b7cff",
   eyes: "#ff5c5c", tissue: "#e8a87c", "glowing cells": "#4ade80", "head scans": "#a3a3a3", "your images": "#ffd24a",
+  nebulae: "#c084fc", planets: "#fbbf24", Earth: "#38bdf8", landscapes: "#a3e635", oceans: "#22d3ee",
+  paintings: "#f472b6", "science art": "#34d399", patterns: "#fb923c",
 };
 
 function chip(text, color) {
@@ -641,8 +682,8 @@ function showComposition(run) {
   lead.className = "muted";
   lead.textContent = "Made of";
   el.replaceChildren(lead);
-  for (const p of parts.slice(0, 6)) el.append(" ", chip(`${p.pct}% ${p.label}`, FAMILY_COLORS[p.label]));
-  const rest = parts.slice(6).reduce((a, p) => a + p.pct, 0);
+  for (const p of parts.slice(0, 8)) el.append(" ", chip(`${p.pct}% ${p.label}`, FAMILY_COLORS[p.label]));
+  const rest = parts.slice(8).reduce((a, p) => a + p.pct, 0);
   if (rest) el.append(" ", chip(`${rest}% other`, "#777"));
   el.hidden = false;
 }
@@ -790,7 +831,7 @@ async function share() {
     : `It lists only which pieces to stack and how bright (${pieces.length} images), not your photo.`;
   if (matchMedia("(pointer: coarse)").matches && navigator.share) {
     try {
-      await navigator.share({ title: "What's hiding in here?", text: `What's hiding in these ${run.n} science images? (${compositionText(run, 4)})`, url });
+      await navigator.share({ title: "What's hiding in here?", text: `What's hiding in these ${run.n} images? (${compositionText(run, 4)})`, url });
       note.textContent = `Shared. ${what}`;
       return;
     } catch { /* fall back to copying */ }
@@ -865,7 +906,7 @@ async function makeGif() {
     await nextFrame();
     // 1. all the images
     bg();
-    gifText(ctx, `${n} science images…`, W / 2, 30);
+    gifText(ctx, `${n} real images…`, W / 2, 30);
     const cols = Math.min(20, Math.ceil(Math.sqrt(n * 1.3))), cell = Math.floor((W - 24) / cols), rows = Math.ceil(n / cols);
     const gx = (W - cols * cell) / 2, gy = PY + Math.max(0, (PIC + 60 - rows * cell) / 2);
     order.forEach((i, r) => {
@@ -906,7 +947,7 @@ async function makeGif() {
 
     // 3. the picture, and what it's made of
     bg();
-    gifText(ctx, `${n} science images, added as light`, W / 2, 30, { size: 15 });
+    gifText(ctx, `${n} real images, added as light`, W / 2, 30, { size: 15 });
     ctx.drawImage(picture(n), PX, PY, PIC, PIC);
     ctx.font = `600 15px ${GIF_FONT}`;
     const parts = composition(run).slice(0, 5).map((p) => `${p.pct}% ${p.label}`);
@@ -961,7 +1002,7 @@ async function startReplay(code) {
   const run = { replay: true, C, n, tmean: rec.tmean, wFinal: Float32Array.from(rec.pieces.map((p) => p.w)), shareable: true };
   state.run = run;
   showStage({ replay: true });
-  setStatus("Loading the science images…");
+  setStatus("Loading the images…");
   const srcs = new Map(); // key -> source
   try {
     const imgIds = [...new Set(rec.pieces.filter((p) => !state.mapById.has(p.img)).map((p) => p.img))];
@@ -1040,7 +1081,7 @@ function guessNow() {
 
 async function challenge() {
   const run = state.run, url = location.href;
-  const text = `I spotted what's hiding in these ${run.n} science images after just ${run.guessedAt}. Can you beat that?`;
+  const text = `I spotted what's hiding in these ${run.n} images after just ${run.guessedAt}. Can you beat that?`;
   if (matchMedia("(pointer: coarse)").matches && navigator.share) {
     try { await navigator.share({ text, url }); return; } catch { /* fall back to copying */ }
   }
@@ -1082,6 +1123,7 @@ async function init() {
   for (const m of state.catalog.maps || []) state.mapById.set(m.id, m);
   for (const p of state.catalog.packs) for (const id of p.images || []) if (!state.familyByImg.has(id)) state.familyByImg.set(id, p.family);
   wireDialog();
+  for (const p of state.catalog.packs) state.selected.add(p.id);
   renderPacks();
   wireCrop();
   wireSheet();

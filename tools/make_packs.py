@@ -11,7 +11,7 @@ before publishing the site.
 
 Usage: python tools/make_packs.py
 """
-import io, json, math, re, urllib.request
+import io, json, math, re, time, urllib.parse, urllib.request
 from pathlib import Path
 import numpy as np
 import skimage.data as d
@@ -92,19 +92,37 @@ MAPS = [
          family="Carina nebula", coresample="webb", thumb_back=2, thumb_center=(7287, 4220)),
 ]
 
-# (id, name, blurb, map id or image ids, family: the short name used in "37% Mars")
+# Tabs the packs are shown under.
+TABS = [("space", "Space"), ("planets", "Planets"), ("earth", "Earth & nature"), ("life", "Life & medicine"), ("art", "Art")]
+
+# (id, name, blurb, source, family, tab). source: a map id, a list of image ids, or
+# "commons:<key>" for the reviewed Wikimedia Commons picks in tools/commons_picks.json.
+# family is the short name used in "37% Mars".
 PACK_DEFS = [
-    ("moon_map", "Moon: whole map", "Every crater, at any zoom (NASA LRO)", 200, "Moon"),
-    ("mars_map", "Mars: whole map", "Craters, dunes, channels (CTX mosaic)", 201, "Mars"),
-    ("andromeda", "Andromeda", "Hubble's 1.5-gigapixel galaxy", 202, "Andromeda"),
-    ("webb_carina", "Carina nebula", "Webb's 'Cosmic Cliffs'", 203, "Carina nebula"),
-    ("space", "Deep space", "Thousands of galaxies from Hubble", [0], "deep space"),
-    ("moon", "Moon photo", "One close-up of craters", [1], "Moon"),
-    ("eyes", "Eyes", "Retina and cornea", [2, 3, 4], "eyes"),
-    ("tissue", "Cells & tissue", "Stained tissue under the microscope", [5, 6, 7], "tissue"),
-    ("glow", "Glowing cells", "Fluorescence microscopy", [8, 9, 10, 11, 12], "glowing cells"),
-    ("head", "Head scans", "Slices through a human head", [13, 14], "head scans"),
+    ("andromeda", "Andromeda", "Hubble's 1.5-gigapixel galaxy", 202, "Andromeda", "space"),
+    ("webb_carina", "Carina nebula", "Webb's 'Cosmic Cliffs'", 203, "Carina nebula", "space"),
+    ("nebulae", "Nebulae", "Crab, Helix, Orion, Pillars of Creation", "commons:nebulae", "nebulae", "space"),
+    ("space", "Deep space", "Thousands of galaxies from Hubble", [0], "deep space", "space"),
+    ("moon_map", "Moon: whole map", "Every crater, at any zoom (NASA LRO)", 200, "Moon", "planets"),
+    ("mars_map", "Mars: whole map", "Craters, dunes, channels (CTX mosaic)", 201, "Mars", "planets"),
+    ("planets", "Planets", "Jupiter, Saturn, Venus, Pluto, Earthrise", "commons:planets", "planets", "planets"),
+    ("moon", "Moon photo", "One close-up of craters", [1], "Moon", "planets"),
+    ("earth_space", "Earth from orbit", "Auroras, city lights, deserts (NASA)", "commons:earth_space", "Earth", "earth"),
+    ("landscapes", "Landscapes", "Peaks, dunes, canyons", "commons:landscapes", "landscapes", "earth"),
+    ("oceans", "Oceans", "Reefs, kelp forests, sea life", "commons:oceans", "oceans", "earth"),
+    ("eyes", "Eyes", "Retina and cornea", [2, 3, 4], "eyes", "life"),
+    ("tissue", "Cells & tissue", "Stained tissue under the microscope", [5, 6, 7], "tissue", "life"),
+    ("glow", "Glowing cells", "Fluorescence microscopy", [8, 9, 10, 11, 12], "glowing cells", "life"),
+    ("head", "Head scans", "Slices through a human head", [13, 14], "head scans", "life"),
+    ("paintings", "Famous paintings", "Van Gogh, Hokusai, Monet, Klimt...", "commons:paintings", "paintings", "art"),
+    ("science_illustration", "Science illustration", "Haeckel's sea creatures, Audubon", "commons:science_illustration", "science art", "art"),
+    ("patterns", "Patterns", "William Morris and ornament", "commons:patterns", "patterns", "art"),
 ]
+
+# Wikimedia Commons images get ids from here on, in the order of commons_picks.json
+# (append only: share links refer to images by id).
+COMMONS_FIRST_ID = 20
+COMMONS_MAXSIDE = 640
 
 
 def credit_text(fn_name):
@@ -124,15 +142,20 @@ for img_id, stem, title, loader, fn_name in IMAGES:
     if max(im.size) > MAXSIDE:
         f = MAXSIDE / max(im.size)
         im = im.resize((round(im.size[0] * f), round(im.size[1] * f)), Image.BOX)
-    im.save(PACKS / f"{stem}.png", optimize=True)
+    # big images ship as high-quality JPEG (same size, so share links stay valid), small ones as PNG
+    fname = f"{stem}.jpg" if max(im.size) > 300 else f"{stem}.png"
+    if fname.endswith(".jpg"):
+        im.save(PACKS / fname, quality=90, optimize=True)
+    else:
+        im.save(PACKS / fname, optimize=True)
     th = im.convert("RGB")
     th.thumbnail((160, 160), Image.BOX)
     th.save(THUMBS / f"{stem}.jpg", quality=85)
-    catalog.append(dict(id=img_id, file=f"{stem}.png", thumb=f"thumbs/{stem}.jpg", title=title,
+    catalog.append(dict(id=img_id, file=fname, thumb=f"thumbs/{stem}.jpg", title=title,
                         width=im.size[0], height=im.size[1], gray=im.mode == "L", credit=credit_text(fn_name)))
     print(f"{img_id:2d} {stem:18s} {im.size} {im.mode}")
 
-UA = {"User-Agent": "ePluribus-pack-builder"}
+UA = {"User-Agent": "ePluribus-pack-builder/1.0 (https://github.com/davidackerman/ePluribus)"}
 
 
 def fetch(url):
@@ -172,11 +195,65 @@ for m in MAPS:
     maps.append({k: v for k, v in m.items() if not k.startswith("thumb_")} | {"thumb": f"thumbs/{m['key']}.jpg"})
     print(f"{m['id']} {m['key']:18s} thumbnail from {url}")
 
+# ---- reviewed Wikimedia Commons picks: public domain / CC0 only (checked again here)
+def commons_info(titles):
+    out = {}
+    for i in range(0, len(titles), 40):
+        q = urllib.parse.urlencode({"action": "query", "format": "json", "prop": "imageinfo", "iiprop": "url|extmetadata",
+                                    "iiurlwidth": 1024, "titles": "|".join(titles[i:i + 40])})
+        d = json.loads(fetch(f"https://commons.wikimedia.org/w/api.php?{q}"))
+        for page in d["query"]["pages"].values():
+            if "imageinfo" in page:
+                out[page["title"]] = page["imageinfo"][0]
+        time.sleep(0.5)
+    return out
+
+
+strip_html = lambda h: re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", h or "")).strip()
+picks = json.load(open(Path(__file__).with_name("commons_picks.json")))
+commons_ids, next_id = {}, COMMONS_FIRST_ID
+for key, titles in picks.items():
+    infos, commons_ids[key] = commons_info(titles), []
+    for j, t in enumerate(titles):
+        ii = infos[t]
+        md = ii["extmetadata"]
+        lic = strip_html(md.get("LicenseShortName", {}).get("value"))
+        assert lic in ("Public domain", "CC0"), f"{t}: licence is now {lic!r}"
+        im = Image.open(io.BytesIO(fetch(ii["thumburl"]))).convert("RGB")
+        if max(im.size) > COMMONS_MAXSIDE:
+            f = COMMONS_MAXSIDE / max(im.size)
+            im = im.resize((round(im.size[0] * f), round(im.size[1] * f)), Image.LANCZOS)
+        stem = f"{key}_{j}"
+        im.save(PACKS / f"{stem}.jpg", quality=85, optimize=True)
+        th = im.copy()
+        th.thumbnail((160, 160), Image.BOX)
+        th.save(THUMBS / f"{stem}.jpg", quality=85)
+        name = strip_html(md.get("ObjectName", {}).get("value")) or t[5:].rsplit(".", 1)[0]
+        artist = strip_html(md.get("Artist", {}).get("value"))[:100]
+        catalog.append(dict(id=next_id, file=f"{stem}.jpg", thumb=f"thumbs/{stem}.jpg", title=name[:70],
+                            width=im.size[0], height=im.size[1], gray=False,
+                            credit=f"{artist + ': ' if artist else ''}{name}. {lic}, via Wikimedia Commons: {ii['descriptionurl']}"))
+        commons_ids[key].append(next_id)
+        next_id += 1
+        time.sleep(0.25)
+    print(f"commons {key}: ids {commons_ids[key][0]}-{commons_ids[key][-1]}")
+
 ids = [c["id"] for c in catalog] + [m["id"] for m in maps]
-assert len(ids) == len(set(ids)) and max(ids) < 256, "image/map ids must be unique and fit in a byte"
-packs = [dict(id=pid, name=name, blurb=blurb, family=fam, **({"map": src} if isinstance(src, int) else {"images": src}))
-         for pid, name, blurb, src, fam in PACK_DEFS]
-json.dump(dict(images=catalog, maps=maps, packs=packs), open(PACKS / "packs.json", "w"), indent=1)
+assert len(ids) == len(set(ids)) and max(ids) < 256 and next_id <= 200, "image/map ids must be unique and fit in a byte"
+
+
+def source(src):
+    if isinstance(src, int):
+        return {"map": src}
+    if isinstance(src, str) and src.startswith("commons:"):
+        return {"images": commons_ids[src[8:]]}
+    return {"images": src}
+
+
+packs = [dict(id=pid, name=name, blurb=blurb, family=fam, tab=tab, **source(src)) for pid, name, blurb, src, fam, tab in PACK_DEFS]
+assert all(p["tab"] in dict(TABS) for p in packs)
+json.dump(dict(images=catalog, maps=maps, packs=packs, tabs=[{"id": t, "name": n} for t, n in TABS]),
+          open(PACKS / "packs.json", "w"), indent=1)
 
 # sample target photos (both public domain / CC0 per scikit-image docs)
 Image.fromarray(d.astronaut()).save(SAMPLES / "astronaut.jpg", quality=92)

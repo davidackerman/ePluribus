@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ePluribus · What are you made of?</title>
-  <meta name="description" content="Turn any picture into 300 real science images (Martian craters, galaxies, eyeballs) and dare your friends to guess what it is.">
-  <meta name="keywords" content="what are you made of, picture made of science images, face made of science images, guess the picture game, photo mosaic, generative art, Mars, Moon, Hubble, Webb, Andromeda, galaxies, microscopy, science art">
+  <meta name="description" content="Turn any picture into 300 real images (Martian craters, galaxies, eyeballs, Van Gogh) and dare your friends to guess what it is.">
+  <meta name="keywords" content="what are you made of, picture made of science images, face made of science images, guess the picture game, photo mosaic, generative art, science art, public domain art, NASA images, Mars, Moon, Hubble, Webb, Andromeda, galaxies, microscopy, science art">
   <meta property="og:type" content="website">
   <meta property="og:title" content="What are you made of?">
-  <meta property="og:description" content="Any picture, rebuilt from 300 real science images. Can you tell what it is?">
+  <meta property="og:description" content="Any picture, rebuilt from 300 real images of space, life and art. Can you tell what it is?">
   <meta property="og:url" content="https://davidackerman.github.io/ePluribus/">
   <meta property="og:image" content="https://davidackerman.github.io/ePluribus/og.png">
   <meta name="twitter:card" content="summary_large_image">
@@ -23,15 +23,15 @@
       <div class="heroText">
         <div class="brand">e<span>Pluribus</span></div>
         <h1 class="hero">What are you made of?</h1>
-        <p class="tag">Turn any picture (a face, your cat, a landmark) into <b>300 real science images</b>: Martian craters, galaxies, eyeballs, stacked as light. Then dare your friends to guess what it is.</p>
+        <p class="tag">Turn any picture (a face, your cat, a landmark) into <b>300 real images</b>: Martian craters, galaxies, eyeballs, Van Gogh, stacked as light. Then dare your friends to guess what it is.</p>
         <div class="row heroCtas" id="heroCtas">
           <button id="demoBtn" class="primary big">Play a round</button>
           <a href="#make" class="button secondary big">Make your own</a>
         </div>
       </div>
       <figure class="heroArt" id="heroArt" role="button" tabindex="0" aria-label="Play a round with this picture">
-        <img class="heroFace" src="samples/demo-face.jpg" width="480" height="480" alt="A famous face, rebuilt from 300 science images">
-        <div class="heroEq"><span>=</span><img src="samples/demo-pieces.png" width="434" height="64" alt="Some of the science images it is made of"><span>&hellip;</span></div>
+        <img class="heroFace" src="samples/demo-face.jpg" width="480" height="480" alt="A famous face, rebuilt from 300 real images">
+        <div class="heroEq"><span>=</span><img src="samples/demo-pieces.png" width="434" height="64" alt="Some of the images it is made of"><span>&hellip;</span></div>
         <figcaption>
           <span class="chips">
             <span class="chip"><i style="--c:#e8a87c"></i>37% tissue</span>
@@ -50,7 +50,7 @@
     <!-- shown when opening a shared link (or playing the demo) -->
     <section id="replayIntro" class="card" hidden>
       <h2>What's hiding in here?</h2>
-      <p>Someone turned a picture into <b id="replayCount"></b> science images. Spot it with as few as you can.</p>
+      <p>Someone turned a picture into <b id="replayCount"></b> real images. Spot it with as few as you can.</p>
       <p class="muted small replayFine">No photo in this link: just which public pieces to stack, and how bright. <button id="makeOwnBtn" class="secondary small">Make your own</button></p>
     </section>
 
@@ -76,7 +76,11 @@
 
       <section class="card">
         <h2><span class="num">2</span> Pick your universe</h2>
-        <p class="muted small sub">Mix and match. The live maps hand out fresh random pieces every time, so no two builds are alike.</p>
+        <p class="muted small sub"><span id="packSummary"></span> Every build grabs a fresh random mix, so no two are alike.</p>
+        <div class="tabBar">
+          <div id="packTabs" class="tabs" role="tablist" aria-label="Image packs"></div>
+          <button id="packAll" type="button" class="secondary small"></button>
+        </div>
         <div id="packGrid" class="packGrid"></div>
         <div class="own">
           <label class="button secondary">Add your own images<input type="file" id="ownInput" accept="image/*" multiple hidden></label>
@@ -125,7 +129,7 @@
             <input type="range" id="scrub" min="1" max="1" value="1"></label>
           <label class="toggle" id="rawRow" hidden><input type="checkbox" id="rawInput"> Show the raw stacked light</label>
           <figure id="gifBox" hidden>
-            <img id="gifPreview" alt="Animated GIF: every science image used, then each one added into the picture, ending with what it is made of">
+            <img id="gifPreview" alt="Animated GIF: every image used, then each one added into the picture, ending with what it is made of">
             <figcaption id="gifNote" class="muted small"></figcaption>
             <div class="row">
               <button id="gifShareBtn" class="primary small" hidden>Share GIF</button>
@@ -162,7 +166,7 @@
 
       <details class="how">
         <summary>Wait, how does this work?</summary>
-        <p>Every piece is a square crop of a real science image, stretched to cover the <em>whole</em> frame. The computer adds them one at a time, always picking the crop whose pattern of light and dark best fills in what's still missing, then re-tunes the brightness of every piece so far.</p>
+        <p>Every piece is a square crop of a real image (a map, a telescope shot, a microscope slide, a painting), stretched to cover the <em>whole</em> frame. The computer adds them one at a time, always picking the crop whose pattern of light and dark best fills in what's still missing, then re-tunes the brightness of every piece so far.</p>
         <p>Pieces can only add light, never take it away, like hundreds of slide projectors pointed at one screen. So the stack is a bright glow with the picture as a faint ripple on top. One black-level setting, the same for every pixel, removes the glow.</p>
         <p>One brightness per image. No masks, no per-pixel tricks: just whole images, added up. "32% Moon" is each source's share of the brightness &times; contrast that draws the picture.</p>
       </details>
@@ -190,7 +194,7 @@
   </dialog>
 
   <footer class="muted small">
-    <p>Your photo never leaves your device. Science images from NASA, ESA, Esri/Murray Lab and scikit-image's sample data (credits under each picture).</p>
+    <p>Your photo never leaves your device. Images from NASA, ESA, Esri/Murray Lab, scikit-image's sample data and public-domain works on Wikimedia Commons (credits under each picture).</p>
     <p><a href="https://github.com/davidackerman/ePluribus">Open source on GitHub</a> &middot; map pieces open in <a href="https://davidackerman.github.io/coresample/">coresample</a></p>
   </footer>
 </body>

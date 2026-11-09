@@ -102,6 +102,13 @@ select { font: inherit; background: #1b202c; color: var(--text); border: 1px sol
 #targetPreview { width: 72px; height: 72px; border-radius: 8px; background: #000; flex: none; }
 
 /* step 2: packs */
+.tabBar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 12px; }
+.tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; max-width: 100%; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { padding: 6px 12px; font-size: 14px; white-space: nowrap; background: #0f1219; }
+.tab span { color: var(--muted); font-size: 12px; font-weight: 600; }
+.tab[aria-selected=true] { background: var(--grad); color: var(--accent-ink); border-color: transparent; }
+.tab[aria-selected=true] span { color: rgba(26, 18, 6, 0.7); }
 .packGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
 .pack {
   text-align: left; border-radius: 12px; padding: 10px 12px; background: #0f1219; border: 1.5px solid var(--line);
