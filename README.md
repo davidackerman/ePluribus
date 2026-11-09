@@ -20,8 +20,9 @@ see if your friends can guess what it is.
 - **Explore:** fade all the pieces by how much each one adds, or tap any piece to see it full
   size, the picture without it, and - for map pieces - the exact spot on Mars or the Moon in
   [coresample](https://davidackerman.github.io/coresample/).
-- **Save and post:** an animated GIF (Share GIF / Download GIF), a 512 px image, and link
-  previews for chats and social media.
+- **Save and post:** an animated GIF (Share GIF / Download GIF), the picture exactly as shown
+  (at however many images you've scrubbed to) as a 512 px image, and link previews for chats
+  and social media.
 - **Private by design:** everything runs in your browser. Your photo is never uploaded; share
   links carry only which public pieces to stack.
 
@@ -30,10 +31,12 @@ see if your friends can guess what it is.
 Every piece is a square crop of a real image, stretched to cover the whole frame. Pieces are
 chosen greedily (non-negative matching pursuit) from thousands of random candidates: each step
 adds the crop whose pattern of light and dark best fills in what's still missing, then
-re-solves every piece's brightness (weights >= 0, like slide projectors on one screen). One
-black level per colour channel removes the resulting glow. Each piece has a single brightness
-for the whole image - no masks, no per-pixel tricks. "37% Moon" is each source's share of
-brightness x contrast.
+re-solves every piece's brightness (weights >= 0, like slide projectors on one screen). A
+black level - the same grey subtracted from every pixel - removes the resulting glow, so the
+colours come only from the images. (Switch off *Colour only from the images* to use one black
+level per colour channel instead, which also matches your photo's overall colour, like a white
+balance.) Each piece has a single brightness for the whole image - no masks, no per-pixel
+tricks. "37% Moon" is each source's share of brightness x contrast.
 
 The fit runs at 64 x 64 in parallel web workers (about 15 seconds for 300 images, including
 downloads); the chosen crops are then re-cut at 256 px for display and 512 px for saving.
@@ -78,7 +81,8 @@ readers are in `web/maps.js`.
 
 - **What a link holds:** a *recipe*, not the photo - for each piece, which public image (or
   map tile), crop position, size, rotation and brightness, plus the average colour (see
-  `encodeRecipe` in `web/core.js`). It lives after the `#`, which browsers don't send to the
+  `encodeRecipe` in `web/core.js`), and whether the black level was shared or per channel.
+  It lives after the `#`, which browsers don't send to the
   server. Anyone with the link can rebuild the (blurry) picture; that's what sharing means.
   Pictures made with your own source images can't be shared as links.
 - **Link length:** a full link (`#r=...`) is about 7,000 characters. **Short links**

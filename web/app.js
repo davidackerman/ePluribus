@@ -401,6 +401,7 @@ async function build() {
   state.busy = true;
   updateBuildButton();
   const C = $("colourInput").checked ? 3 : 1, K = +$("kInput").value, P = +$("poolInput").value;
+  const neutral = C === 3 && $("pureInput").checked; // colour only from the images: one shared black level
   const run = { C, K, replay: false, cancelled: false, pieces: [], order: [], wHist: [], atoms64: [] };
   state.run = run;
   showStage({ replay: false });
@@ -412,7 +413,8 @@ async function build() {
     const { sources, weights } = await gatherSources(run);
     run.shareable = sources.every((s) => !s.own);
 
-    const pb = new PoolBuilder({ sources, weights, count: P, C, seed: (Math.random() * 2 ** 31) | 0 });
+    run.neutral = neutral;
+    const pb = new PoolBuilder({ sources, weights, count: P, C, neutral, seed: (Math.random() * 2 ** 31) | 0 });
     while (!pb.step(250)) {
       setStatus(`Cutting ${pb.done.toLocaleString()} of ${P.toLocaleString()} crops…`);
       setProgress((pb.done / P) * 0.1);
@@ -434,7 +436,7 @@ async function build() {
     run.sources = sources;
     pb.pool = null; // the workers have their own copies now
 
-    const fit = new Fitter(t, C, K);
+    const fit = new Fitter(t, C, K, { neutral });
     run.fit = fit;
     const marks = new Int32Array(workers.length).fill(-1);
     $("stopBtn").hidden = false;
@@ -485,7 +487,7 @@ async function finishBuild(run) {
   run.hi = [];
   for (let i = 0; i < n; i++) {
     const p = run.pieces[i];
-    run.hi.push(atomBytes(p.src, p.x, p.y, p.s, p.o, HI, C));
+    run.hi.push(atomBytes(p.src, p.x, p.y, p.s, p.o, HI, C, run.neutral));
     if (i % 10 === 0) {
       setStatus(`Rendering in high resolution: re-cutting all ${n} images at ${HI} px…`);
       setProgress(0.9 + (0.1 * i) / n);
@@ -766,21 +768,30 @@ async function download() {
   const btn = $("downloadBtn"), before = $("status").textContent;
   btn.disabled = true;
   try {
-    const C = run.C, RR = DL * DL, acc = new Float32Array(C * RR), off = new Float64Array(C), w = run.wFinal;
-    for (let i = 0; i < run.n; i++) {
+    // exactly what's on screen: the same number of images and the same weights (and, for a
+    // replay's partial stack, the same contrast rescaling), just rendered at 512 px
+    const C = run.C, RR = DL * DL, acc = new Float32Array(C * RR), off = new Float64Array(C);
+    const k = Math.max(1, Math.min(run.n, +$("scrub").value || run.n));
+    const w = run.replay ? run.wFinal : run.wHist[k - 1];
+    let gain = 1;
+    if (run.replay && k < run.n) {
+      const sd = stdOf(renderSum(run.hi, w, k, C, HI, run.tmean), C, run.tmean);
+      if (sd > 1e-9) gain = Math.min(run.finalStd / sd, 50);
+    }
+    for (let i = 0; i < k; i++) {
       if (!w[i]) continue;
-      const p = run.pieces[i], a = atomBytes(p.src, p.x, p.y, p.s, p.o, DL, C), f = w[i] / 255;
+      const p = run.pieces[i], a = atomBytes(p.src, p.x, p.y, p.s, p.o, DL, C, run.neutral), f = w[i] / 255;
       for (let q = 0; q < acc.length; q++) acc[q] += f * a.u8[q];
       for (let c = 0; c < C; c++) off[c] += w[i] * a.mean[c];
-      if (i % 10 === 0) { setStatus(`Rendering a ${DL} px image… ${i} of ${run.n}`); await nextFrame(); }
+      if (i % 10 === 0) { setStatus(`Rendering a ${DL} px image… ${i} of ${k}`); await nextFrame(); }
     }
-    for (let c = 0; c < C; c++) for (let p = 0; p < RR; p++) acc[c * RR + p] += run.tmean[c] - off[c];
+    for (let c = 0; c < C; c++) for (let p = 0; p < RR; p++) acc[c * RR + p] = (acc[c * RR + p] - off[c]) * gain + run.tmean[c];
     const cv = document.createElement("canvas");
     drawFloat(cv, acc, C, DL);
     const blob = await new Promise((r) => cv.toBlob(r, "image/png"));
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "epluribus.png";
+    a.download = k === run.n ? "epluribus.png" : `epluribus-${k}-images.png`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 10000);
   } finally {
@@ -802,7 +813,7 @@ async function share() {
   });
   const note = $("shareNote"), base = location.href.split("#")[0];
   if (!run.shareUrl) {
-    const recipe = encodeRecipe({ C: run.C, tmean: run.tmean, pieces });
+    const recipe = encodeRecipe({ C: run.C, tmean: run.tmean, pieces, neutral: run.neutral });
     run.shareUrl = `${base}#r=${recipe}`;
     run.shortLink = false;
     if (state.store) {
@@ -989,7 +1000,7 @@ async function startReplay(code) {
   }
   $("replayCount").textContent = String(rec.pieces.length);
   const C = rec.C, n = rec.pieces.length;
-  const run = { replay: true, C, n, tmean: rec.tmean, wFinal: Float32Array.from(rec.pieces.map((p) => p.w)), shareable: true };
+  const run = { replay: true, C, n, neutral: rec.neutral, tmean: rec.tmean, wFinal: Float32Array.from(rec.pieces.map((p) => p.w)), shareable: true };
   state.run = run;
   showStage({ replay: true });
   setStatus("Loading the images…");
@@ -1030,8 +1041,8 @@ async function startReplay(code) {
   run.atoms64 = [];
   for (let i = 0; i < n; i++) {
     const p = run.pieces[i];
-    run.hi.push(atomBytes(p.src, p.x, p.y, p.s, p.o, HI, C));
-    run.atoms64.push(atomBytes(p.src, p.x, p.y, p.s, p.o, N, C));
+    run.hi.push(atomBytes(p.src, p.x, p.y, p.s, p.o, HI, C, run.neutral));
+    run.atoms64.push(atomBytes(p.src, p.x, p.y, p.s, p.o, N, C, run.neutral));
     if (i % 10 === 0) { setStatus(`Cutting the ${n} images… ${i} of ${n}`); setProgress(i / n); await nextFrame(); }
   }
   setProgress(1);
@@ -1131,7 +1142,7 @@ async function init() {
   }
   $("ownInput").addEventListener("change", (e) => { addOwnImages([...e.target.files]); e.target.value = ""; });
   $("kInput").addEventListener("input", (e) => { $("kLabel").textContent = e.target.value; });
-  $("colourInput").addEventListener("change", scheduleCrop);
+  $("colourInput").addEventListener("change", () => { $("pureInput").disabled = !$("colourInput").checked; scheduleCrop(); });
   $("buildBtn").addEventListener("click", build);
   $("stopBtn").addEventListener("click", () => { if (state.run) state.run.cancelled = true; });
   $("scrub").addEventListener("input", () => { if (state.run) state.run.playing = false; scheduleRender(); });

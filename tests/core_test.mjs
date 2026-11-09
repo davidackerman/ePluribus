@@ -88,6 +88,32 @@ let maxDiff = 0;
 for (let p = 0; p < D; p++) maxDiff = Math.max(maxDiff, Math.abs(fromRecipe[p] - direct[p]));
 check(maxDiff < 1e-4, `picture rebuilt from the recipe matches the fit (max diff ${maxDiff.toExponential(1)})`);
 
+// ---- neutral mode: one black level for all channels (colour only from the images)
+if (C === 3) {
+  const pbN = new PoolBuilder({ sources, count: 3000, C, seed: 2, neutral: true });
+  pbN.step(3000);
+  const usedN = new Uint8Array(3000), fitN = new Fitter(t, C, 60, { neutral: true }), orderN = [];
+  for (let k = 0; k < 60; k++) {
+    const { best, score } = scoreBest(pbN.pool, pbN.norms, usedN, D, fitN.residualF32());
+    if (!(score > 1e-9)) break;
+    usedN[best] = 1;
+    orderN.push(best);
+    fitN.add(pbN.pool.subarray(best * D, (best + 1) * D));
+  }
+  check(fitN.tmean[0] === fitN.tmean[1] && fitN.tmean[1] === fitN.tmean[2], "neutral fit: the same black level in every channel (no tint)");
+  const piecesN = orderN.map((j, i) => {
+    const [si, x, y, s, o] = pbN.params.subarray(j * 5, j * 5 + 5);
+    return { img: ids[si], x, y, s, o, w: fitN.w[i] };
+  });
+  const decN = decodeRecipe(encodeRecipe({ C, tmean: Array.from(fitN.tmean), pieces: piecesN, neutral: true }));
+  check(decN.neutral === true && dec.neutral === false, "recipes carry the neutral flag (and old-style ones read as not neutral)");
+  const rebuiltN = decN.pieces.map((p) => atomBytes(byId[p.img], p.x, p.y, p.s, p.o, N, C, true));
+  const picN = renderSum(rebuiltN, decN.pieces.map((p) => p.w), decN.pieces.length, C, N, decN.tmean), directN = fitN.reconstruction();
+  let maxN = 0;
+  for (let p = 0; p < D; p++) maxN = Math.max(maxN, Math.abs(picN[p] - directN[p]));
+  check(maxN < 1e-4, `neutral picture rebuilt from its recipe matches the fit (max diff ${maxN.toExponential(1)})`);
+}
+
 // malformed recipes must be rejected, not crash
 let rejected = 0;
 for (const bad of ["", "AAAA", code.slice(0, -7), "!!!!"]) { try { decodeRecipe(bad); } catch { rejected++; } }

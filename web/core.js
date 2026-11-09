@@ -148,11 +148,11 @@ export function makeAtom(src, x, y, s, o, R, C, out, scratch) {
   return out;
 }
 
-// Quantise a float piece into dst[off..] as bytes; returns {norm, mean}
-// where norm is the length of the mean-removed (per channel) quantised piece.
-export function quantizeInto(vals, C, dst, off) {
-  const RR = vals.length / C, mean = new Float32Array(C);
-  let n2 = 0;
+// Quantise a float piece into dst[off..] as bytes; returns {norm, mean}: the
+// piece's mean per channel (neutral: one mean shared by all channels) and the
+// length of the piece with that mean removed.
+export function quantizeInto(vals, C, dst, off, neutral = false) {
+  const RR = vals.length / C, sums = new Float64Array(C), sq = new Float64Array(C);
   for (let c = 0; c < C; c++) {
     let s = 0, ss = 0;
     for (let p = 0; p < RR; p++) {
@@ -161,25 +161,38 @@ export function quantizeInto(vals, C, dst, off) {
       const f = q / 255;
       s += f; ss += f * f;
     }
-    mean[c] = s / RR;
-    n2 += ss - RR * mean[c] * mean[c];
+    sums[c] = s;
+    sq[c] = ss;
   }
+  const mean = channelMeans(sums, RR, neutral);
+  let n2 = 0;
+  for (let c = 0; c < C; c++) n2 += sq[c] - 2 * mean[c] * sums[c] + RR * mean[c] * mean[c];
   return { norm: Math.sqrt(Math.max(n2, 0)), mean };
 }
 
+// Means from per-channel sums over RR pixels; neutral: every channel gets the overall mean
+// (so removing it subtracts the same grey from every channel, adding no tint).
+export function channelMeans(sums, RR, neutral) {
+  const C = sums.length, mean = new Float32Array(C);
+  const all = sums.reduce((a, b) => a + b, 0) / (C * RR);
+  for (let c = 0; c < C; c++) mean[c] = neutral ? all : sums[c] / RR;
+  return mean;
+}
+
 // The exact bytes a piece has in the pool (used to rebuild shared recipes).
-export function atomBytes(src, x, y, s, o, R, C) {
+export function atomBytes(src, x, y, s, o, R, C, neutral = false) {
   const vals = makeAtom(src, x, y, s, o, R, C, new Float32Array(C * R * R));
   const u8 = new Uint8Array(C * R * R);
-  const { mean, norm } = quantizeInto(vals, C, u8, 0);
+  const { mean, norm } = quantizeInto(vals, C, u8, 0, neutral);
   return { u8, mean, norm };
 }
 
 /* ------------------------------------------------------------ candidate pool */
 export class PoolBuilder {
   // weights: how often each source is picked (default: by area, capped at 512 x 512)
-  constructor({ sources, count, C, seed = 1, weights = null }) {
-    Object.assign(this, { sources, count, C, D: C * NN, done: 0 });
+  // neutral: one black level for all channels (colour comes only from the images)
+  constructor({ sources, count, C, seed = 1, weights = null, neutral = false }) {
+    Object.assign(this, { sources, count, C, D: C * NN, done: 0, neutral });
     this.pool = new Uint8Array(count * this.D);
     this.norms = new Float32Array(count);
     this.params = new Int32Array(count * 5); // source index, x, y, s, orient
@@ -209,7 +222,7 @@ export class PoolBuilder {
       const x = Math.floor(rand() * (src.w - s + 1)), y = Math.floor(rand() * (src.h - s + 1));
       const o = Math.floor(rand() * 8);
       makeAtom(src, x, y, s, o, N, this.C, this.tmp, this.scratch);
-      const { norm } = quantizeInto(this.tmp, this.C, this.pool, slot * this.D);
+      const { norm } = quantizeInto(this.tmp, this.C, this.pool, slot * this.D, this.neutral);
       if (norm >= MIN_NORM || attempt === 19) {
         this.norms[slot] = Math.max(norm, 1e-6);
         this.params.set([si, x, y, s, o], slot * 5);
@@ -220,9 +233,9 @@ export class PoolBuilder {
 }
 
 /* ------------------------------------------------------------ scoring (worker) */
-// Best unused piece for residual res (mean-zero per channel):
-// score_j = <piece_j, res> / ||piece_j - mean||.  Since res has zero mean per
-// channel, the raw dot product equals the mean-removed one.
+// Best unused piece for residual res: score_j = <piece_j, res> / ||piece_j - mean||.
+// res sums to zero per channel (or overall, in neutral mode, where a piece's mean is the
+// same in every channel), so the raw dot product equals the mean-removed one.
 export function scoreBest(pool, norms, used, D, res) {
   let best = -1, bestScore = -Infinity;
   for (let j = 0, n = norms.length; j < n; j++) {
@@ -246,17 +259,16 @@ export function scoreBest(pool, norms, used, D, res) {
 // all weights are re-solved together (non-negative least squares by
 // coordinate descent on the Gram matrix, warm-started).
 export class Fitter {
-  constructor(target, C, Kmax) {
+  // neutral: one black level for all channels, so the picture's colour comes only from
+  // the images (otherwise one per channel, which also matches the target's overall tint)
+  constructor(target, C, Kmax, { neutral = false } = {}) {
     const D = target.length, RR = D / C;
-    Object.assign(this, { D, C, RR, Kmax, k: 0 });
-    this.tmean = new Float64Array(C);
+    Object.assign(this, { D, C, RR, Kmax, k: 0, neutral });
+    const sums = new Float64Array(C);
+    for (let c = 0; c < C; c++) for (let p = 0; p < RR; p++) sums[c] += target[c * RR + p];
+    this.tmean = Float64Array.from(channelMeans(sums, RR, neutral));
     this.tc = new Float64Array(D);
-    for (let c = 0; c < C; c++) {
-      let s = 0;
-      for (let p = 0; p < RR; p++) s += target[c * RR + p];
-      this.tmean[c] = s / RR;
-      for (let p = 0; p < RR; p++) this.tc[c * RR + p] = target[c * RR + p] - this.tmean[c];
-    }
+    for (let c = 0; c < C; c++) for (let p = 0; p < RR; p++) this.tc[c * RR + p] = target[c * RR + p] - this.tmean[c];
     this.tnorm = Math.sqrt(this.tc.reduce((a, v) => a + v * v, 0));
     this.atoms = [];          // mean-removed pieces (Float32Array D)
     this.means = [];          // per-channel means of each piece
@@ -270,13 +282,10 @@ export class Fitter {
   add(u8) {
     const { D, C, RR, Kmax, G, b, w } = this, k = this.k;
     if (k >= Kmax) throw new Error("Fitter full");
-    const a = new Float32Array(D), mean = new Float32Array(C);
-    for (let c = 0; c < C; c++) {
-      let s = 0;
-      for (let p = 0; p < RR; p++) s += u8[c * RR + p];
-      mean[c] = s / RR / 255;
-      for (let p = 0; p < RR; p++) a[c * RR + p] = u8[c * RR + p] / 255 - mean[c];
-    }
+    const a = new Float32Array(D), sums = new Float64Array(C);
+    for (let c = 0; c < C; c++) for (let p = 0; p < RR; p++) sums[c] += u8[c * RR + p] / 255;
+    const mean = channelMeans(sums, RR, this.neutral);
+    for (let c = 0; c < C; c++) for (let p = 0; p < RR; p++) a[c * RR + p] = u8[c * RR + p] / 255 - mean[c];
     for (let i = 0; i < k; i++) {
       const g = dot(a, this.atoms[i]);
       G[k * Kmax + i] = g;
@@ -400,7 +409,7 @@ export function toRGBA(vec, C, R, out = new Uint8ClampedArray(R * R * 4), scale 
 
 /* ------------------------------------------------------------ share recipes */
 // Binary, little-endian:
-//   u8 version | u8 flags (bit 0: colour) | u16 count | f32 tmean[C] | count x piece
+//   u8 version | u8 flags (bit 0: colour, bit 1: neutral black level) | u16 count | f32 tmean[C] | count x piece
 //   version 2 piece: u8 image or map id, u8 zoom, u16 tile x, u16 tile y,
 //                    u16 x, u16 y, u16 size, u8 orient, f32 weight
 //     (for a plain image, zoom and tile are 0 and x, y, size are in the image;
@@ -411,10 +420,10 @@ export function toRGBA(vec, C, R, out = new Uint8ClampedArray(R * R * 4), scale 
 export const RECIPE_VERSION = 2;
 const PIECE_BYTES = { 1: 12, 2: 17 };
 
-export function encodeRecipe({ C, tmean, pieces }) {
+export function encodeRecipe({ C, tmean, pieces, neutral = false }) {
   const buf = new ArrayBuffer(4 + 4 * C + PIECE_BYTES[2] * pieces.length), dv = new DataView(buf);
   dv.setUint8(0, RECIPE_VERSION);
-  dv.setUint8(1, C === 3 ? 1 : 0);
+  dv.setUint8(1, (C === 3 ? 1 : 0) | (neutral ? 2 : 0));
   dv.setUint16(2, pieces.length, true);
   for (let c = 0; c < C; c++) dv.setFloat32(4 + 4 * c, tmean[c], true);
   let o = 4 + 4 * C;
@@ -431,7 +440,8 @@ export function decodeRecipe(str) {
   const bytes = b64urlDecode(str), dv = new DataView(bytes.buffer);
   const version = bytes.length >= 4 ? dv.getUint8(0) : 0;
   if (!PIECE_BYTES[version]) throw new Error("Unknown recipe version");
-  const C = dv.getUint8(1) & 1 ? 3 : 1, count = dv.getUint16(2, true), pb = PIECE_BYTES[version];
+  const flags = dv.getUint8(1), C = flags & 1 ? 3 : 1, neutral = !!(flags & 2);
+  const count = dv.getUint16(2, true), pb = PIECE_BYTES[version];
   if (bytes.length !== 4 + 4 * C + pb * count || count > 2000) throw new Error("Malformed recipe");
   const tmean = Array.from({ length: C }, (_, c) => dv.getFloat32(4 + 4 * c, true));
   const pieces = [];
@@ -447,7 +457,7 @@ export function decodeRecipe(str) {
   if (!tmean.every(Number.isFinite) || !pieces.every((p) => Number.isFinite(p.w) && p.w >= 0)) {
     throw new Error("Malformed recipe");
   }
-  return { C, tmean, pieces };
+  return { C, tmean, pieces, neutral };
 }
 
 function b64urlEncode(bytes) {
