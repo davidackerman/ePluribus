@@ -370,8 +370,7 @@ const workerCount = () => Math.max(1, Math.min(8, (navigator.hardwareConcurrency
 function showStage({ replay }) {
   $("stage").hidden = false;
   $("targetBox").hidden = replay;
-  for (const id of ["actions", "scrubRow", "playRow", "rawRow", "rawNote", "sheetBlock", "gifBox", "composition", "guessBtn", "guessNote"]) $(id).hidden = true;
-  $("rawInput").checked = false;
+  for (const id of ["actions", "scrubRow", "playRow", "sheetBlock", "gifBox", "composition", "guessBtn", "guessNote"]) $(id).hidden = true;
   $("shareNote").textContent = "";
   $("addingLabel").textContent = "";
   $("addingCanvas").getContext("2d").clearRect(0, 0, 64, 64);
@@ -503,7 +502,6 @@ async function finishBuild(run) {
   buildCredits(run);
   showComposition(run);
   $("actions").hidden = false;
-  $("rawRow").hidden = false;
   $("playRow").hidden = false;
   $("playBtn").textContent = "Watch it again";
   $("shareBtn").disabled = !run.shareable;
@@ -525,15 +523,7 @@ function renderAt(k) {
   if (!run?.hi) return;
   k = Math.max(1, Math.min(run.n, k));
   $("scrubLabel").textContent = `${k} of ${run.n}`;
-  if ($("rawInput").checked) {
-    const weights = run.replay ? run.wFinal : run.wHist[k - 1];
-    const raw = renderSum(run.hi, weights, k, run.C, HI, run.tmean, { raw: true });
-    let mx = 1e-9;
-    for (const v of raw) if (v > mx) mx = v;
-    drawFloat($("resultCanvas"), raw, run.C, HI, 1 / mx);
-  } else {
-    drawFloat($("resultCanvas"), frameVec(run, k), run.C, HI);
-  }
+  drawFloat($("resultCanvas"), frameVec(run, k), run.C, HI);
   showAdding(run, k - 1);
 }
 
@@ -1052,7 +1042,6 @@ async function startReplay(code) {
   showAdding(run, 0);
   buildCredits(run);
   $("actions").hidden = false;
-  $("rawRow").hidden = false;
   $("playRow").hidden = false;
   $("guessBtn").hidden = false;
   $("playBtn").textContent = "Play";
@@ -1151,7 +1140,6 @@ async function init() {
     buildSheet(state.run);
     showAdding(state.run, +$("scrub").value - 1);
   });
-  $("rawInput").addEventListener("change", () => { $("rawNote").hidden = !$("rawInput").checked; scheduleRender(); });
   $("playBtn").addEventListener("click", play);
   $("downloadBtn").addEventListener("click", download);
   $("gifBtn").addEventListener("click", makeGif);

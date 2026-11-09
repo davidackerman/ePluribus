@@ -356,9 +356,8 @@ export function dot(a, b) {
 // pieces: [{u8: Uint8Array(C*R*R), mean: Float32Array(C)}]
 // Returns sum_i<k weights[i] * (piece_i - mean_i) + tmean, optionally
 // rescaled so its contrast (std) equals `matchStd` (used for replays, where
-// partial sums use the final weights). With raw=true returns the plain sum
-// of light, sum_i weights[i] * piece_i.
-export function renderSum(pieces, weights, k, C, R, tmean, { matchStd = 0, raw = false } = {}) {
+// partial sums use the final weights).
+export function renderSum(pieces, weights, k, C, R, tmean, { matchStd = 0 } = {}) {
   const RR = R * R, D = C * RR, acc = new Float32Array(D), off = new Float64Array(C);
   for (let i = 0; i < k; i++) {
     const wi = weights[i];
@@ -367,7 +366,6 @@ export function renderSum(pieces, weights, k, C, R, tmean, { matchStd = 0, raw =
     for (let p = 0; p < D; p++) acc[p] += f * u[p];
     for (let c = 0; c < C; c++) off[c] += wi * pieces[i].mean[c];
   }
-  if (raw) return acc;
   for (let c = 0; c < C; c++) for (let p = 0; p < RR; p++) acc[c * RR + p] -= off[c];
   if (matchStd > 0) {
     let ss = 0;
@@ -390,7 +388,7 @@ export function stdOf(vec, C, tmean) {
 }
 
 // Float picture (C channels, channel-major, 0..1) -> RGBA bytes.
-// scale lets the raw light sum be shown divided by its maximum.
+// scale multiplies every value first (1 = as is).
 export function toRGBA(vec, C, R, out = new Uint8ClampedArray(R * R * 4), scale = 1) {
   const RR = R * R;
   for (let p = 0; p < RR; p++) {
