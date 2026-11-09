@@ -1,0 +1,307 @@
+{
+ "images": [
+  {
+   "id": 0,
+   "file": "hubble_xdf.png",
+   "thumb": "thumbs/hubble_xdf.jpg",
+   "title": "Hubble eXtreme Deep Field",
+   "width": 1000,
+   "height": 872,
+   "gray": false,
+   "credit": "Hubble eXtreme Deep Field. This photograph contains the Hubble Telescope's farthest ever view of the universe. It can be useful as an example for multi-scale detection. Notes ----- This image was downloaded from `HubbleSite <http://hubblesite.org/newscenter/archive/releases/2012/37/image/a/>`__. The image was captured by NASA and `may be freely used in the public domain <http://www.nasa.gov/audience/formedia/features/MP_Photo_Guidelines.html>`_."
+  },
+  {
+   "id": 1,
+   "file": "moon.png",
+   "thumb": "thumbs/moon.jpg",
+   "title": "Surface of the Moon",
+   "width": 512,
+   "height": 512,
+   "gray": true,
+   "credit": "Surface of the moon. This low-contrast image of the surface of the moon is useful for illustrating histogram equalization and contrast stretching."
+  },
+  {
+   "id": 2,
+   "file": "retina.png",
+   "thumb": "thumbs/retina.jpg",
+   "title": "Human retina",
+   "width": 1024,
+   "height": 1024,
+   "gray": false,
+   "credit": "Human retina. This image of a retina is useful for demonstrations requiring circular images. Notes ----- This image was downloaded from `wikimedia <https://commons.wikimedia.org/wiki/File:Fundus_photograph_of_normal_left_eye.jpg>`. This file is made available under the Creative Commons CC0 1.0 Universal Public Domain Dedication. References ---------- .. [1] H\u00e4ggstr\u00f6m, Mikael (2014). \"Medical gallery of Mikael H\u00e4ggstr\u00f6m 2014\". WikiJournal of Medicine 1 (2). :DOI:`10.15347/wjm/2014.008`. ISSN 2002-4436. Public Domain"
+  },
+  {
+   "id": 3,
+   "file": "retina_closeup.png",
+   "thumb": "thumbs/retina_closeup.jpg",
+   "title": "Retina close-up (microaneurysms)",
+   "width": 102,
+   "height": 102,
+   "gray": true,
+   "credit": "Gray-level \"microaneurysms\" image. Detail from an image of the retina (green channel). The image is a crop of image 07_dr.JPG from the High-Resolution Fundus (HRF) Image Database: https://www5.cs.fau.de/research/data/fundus-images/ Notes ----- No copyright restrictions. CC0 given by owner (Andreas Maier)."
+  },
+  {
+   "id": 4,
+   "file": "cornea.png",
+   "thumb": "thumbs/cornea.jpg",
+   "title": "Living cornea (palisades of Vogt)",
+   "width": 1024,
+   "height": 1024,
+   "gray": true,
+   "credit": "Return image sequence of in-vivo tissue showing the palisades of Vogt. In the human eye, the palisades of Vogt are normal features of the corneal limbus, which is the border between the cornea and the sclera (i.e., the white of the eye). In the image sequence, there are some dark spots due to the presence of dust on the reference mirror."
+  },
+  {
+   "id": 5,
+   "file": "ihc_stain.png",
+   "thumb": "thumbs/ihc_stain.jpg",
+   "title": "Immunohistochemistry stain",
+   "width": 512,
+   "height": 512,
+   "gray": false,
+   "credit": "Immunohistochemical (IHC) staining with hematoxylin counterstaining. This picture shows colonic glands where the IHC expression of FHL2 protein is revealed with DAB. Hematoxylin counterstaining is applied to enhance the negative parts of the tissue. This image was acquired at the Center for Microscopy And Molecular Imaging (CMMI). No known copyright restrictions."
+  },
+  {
+   "id": 6,
+   "file": "skin.png",
+   "thumb": "thumbs/skin.jpg",
+   "title": "Skin layers (microscope)",
+   "width": 1024,
+   "height": 768,
+   "gray": false,
+   "credit": "Microscopy image of dermis and epidermis (skin layers). Hematoxylin and eosin stained slide at 10x of normal epidermis and dermis with a benign intradermal nevus. Notes ----- This image requires an Internet connection the first time it is called, and to have the ``pooch`` package installed, in order to fetch the image file from the scikit-image datasets repository. The source of this image is https://en.wikipedia.org/wiki/File:Normal_Epidermis_and_Dermis_with_Intradermal_Nevus_10x.JPG The image was released in the public domain by its author Kilbad."
+  },
+  {
+   "id": 7,
+   "file": "cell.png",
+   "thumb": "thumbs/cell.jpg",
+   "title": "Cell floating in saline",
+   "width": 550,
+   "height": 660,
+   "gray": true,
+   "credit": "Cell floating in saline. This is a quantitative phase image retrieved from a digital hologram using the Python library ``qpformat``. The image shows a cell with high phase value, above the background phase. Because of a banding pattern artifact in the background, this image is a good test of thresholding algorithms. The pixel spacing is 0.107 \u00b5m. These data were part of a comparison between several refractive index retrieval techniques for spherical objects as part of [1]_. This image is CC0, dedicated to the public domain. You may copy, modify, or distribute it without asking permission."
+  },
+  {
+   "id": 8,
+   "file": "cells3d.png",
+   "thumb": "thumbs/cells3d.jpg",
+   "title": "Fluorescent cells (membranes and nuclei)",
+   "width": 256,
+   "height": 256,
+   "gray": false,
+   "credit": "3D fluorescence microscopy image of cells. The returned data is a 3D multichannel array with dimensions provided in ``(z, c, y, x)`` order. Each voxel has a size of ``(0.29 0.26 0.26)`` micrometer. Channel 0 contains cell membranes, channel 1 contains nuclei."
+  },
+  {
+   "id": 9,
+   "file": "kidney.png",
+   "thumb": "thumbs/kidney.jpg",
+   "title": "Mouse kidney tissue (fluorescence)",
+   "width": 512,
+   "height": 512,
+   "gray": false,
+   "credit": "Mouse kidney tissue. This biological tissue on a pre-prepared slide was imaged with confocal fluorescence microscopy (Nikon C1 inverted microscope). Image shape is (16, 512, 512, 3). That is 512x512 pixels in X-Y, 16 image slices in Z, and 3 color channels (emission wavelengths 450nm, 515nm, and 605nm, respectively). Real-space voxel size is 1.24 microns in X-Y, and 1.25 microns in Z. Data type is unsigned 16-bit integers. Notes ----- This image was acquired by Genevieve Buckley at Monasoh Micro Imaging in 2018. License: CC0"
+  },
+  {
+   "id": 10,
+   "file": "lily.png",
+   "thumb": "thumbs/lily.jpg",
+   "title": "Lily-of-the-valley stem (fluorescence)",
+   "width": 922,
+   "height": 922,
+   "gray": false,
+   "credit": "Lily of the valley plant stem. This plant stem on a pre-prepared slide was imaged with confocal fluorescence microscopy (Nikon C1 inverted microscope). Image shape is (922, 922, 4). That is 922x922 pixels in X-Y, with 4 color channels. Real-space voxel size is 1.24 microns in X-Y. Data type is unsigned 16-bit integers. Notes ----- This image was acquired by Genevieve Buckley at Monasoh Micro Imaging in 2018. License: CC0"
+  },
+  {
+   "id": 11,
+   "file": "mitosis.png",
+   "thumb": "thumbs/mitosis.jpg",
+   "title": "Human cells dividing (nuclei)",
+   "width": 512,
+   "height": 512,
+   "gray": true,
+   "credit": "Image of human cells undergoing mitosis."
+  },
+  {
+   "id": 12,
+   "file": "protein_transport.png",
+   "thumb": "thumbs/protein_transport.jpg",
+   "title": "Proteins moving into a nucleus",
+   "width": 183,
+   "height": 180,
+   "gray": false,
+   "credit": "Microscopy image sequence with fluorescence tagging of proteins re-localizing from the cytoplasmic area to the nuclear envelope."
+  },
+  {
+   "id": 13,
+   "file": "head_a.png",
+   "thumb": "thumbs/head_a.jpg",
+   "title": "Head scan (upper slice)",
+   "width": 256,
+   "height": 256,
+   "gray": true,
+   "credit": "Subset of data from the University of North Carolina Volume Rendering Test Data Set. The full dataset is available at [1]_."
+  },
+  {
+   "id": 14,
+   "file": "head_b.png",
+   "thumb": "thumbs/head_b.jpg",
+   "title": "Head scan (lower slice)",
+   "width": 256,
+   "height": 256,
+   "gray": true,
+   "credit": "Subset of data from the University of North Carolina Volume Rendering Test Data Set. The full dataset is available at [1]_."
+  }
+ ],
+ "maps": [
+  {
+   "id": 200,
+   "key": "moon_map",
+   "name": "Moon map",
+   "kind": "xyz",
+   "tileSize": 256,
+   "maxZoom": 8,
+   "width": 131072,
+   "height": 65536,
+   "url": "https://trek.nasa.gov/tiles/Moon/EQ/LRO_WAC_Mosaic_Global_303ppd_v02/1.0.0/default/default028mm/{z}/{y}/{x}.jpg",
+   "credit": "NASA/GSFC/Arizona State University: LRO Wide Angle Camera global mosaic, via NASA Trek",
+   "family": "Moon",
+   "coresample": "moon-wac",
+   "thumb": "thumbs/moon_map.jpg"
+  },
+  {
+   "id": 201,
+   "key": "mars_map",
+   "name": "Mars map",
+   "kind": "xyz",
+   "tileSize": 512,
+   "maxZoom": 12,
+   "width": 4194304,
+   "height": 2097152,
+   "url": "https://astro.arcgis.com/arcgis/rest/services/OnMars/CTX/MapServer/tile/{z}/{y}/{x}",
+   "skipZooms": [
+    5,
+    11
+   ],
+   "noDataBlack": true,
+   "credit": "NASA/JPL/MSSS/Caltech Murray Lab/Esri: CTX global mosaic of Mars",
+   "family": "Mars",
+   "coresample": "mars-ctx",
+   "thumb": "thumbs/mars_map.jpg"
+  },
+  {
+   "id": 202,
+   "key": "andromeda",
+   "name": "Andromeda (Hubble)",
+   "kind": "zoomify",
+   "base": "https://cdn.esahubble.org/archives/images/zoomable/heic1502a",
+   "noDataBlack": true,
+   "credit": "NASA, ESA, J. Dalcanton, B.F. Williams, L.C. Johnson (University of Washington), the PHAT team, R. Gendler (CC BY 4.0)",
+   "family": "Andromeda",
+   "coresample": "andromeda",
+   "thumb": "thumbs/andromeda.jpg"
+  },
+  {
+   "id": 203,
+   "key": "webb_carina",
+   "name": "Carina nebula (Webb)",
+   "kind": "zoomify",
+   "base": "https://cdn.esawebb.org/archives/images/zoomable/weic2205a",
+   "credit": "NASA, ESA, CSA, STScI (CC BY 4.0)",
+   "family": "Carina nebula",
+   "coresample": "webb",
+   "thumb": "thumbs/webb_carina.jpg"
+  }
+ ],
+ "packs": [
+  {
+   "id": "moon_map",
+   "name": "Moon: whole map",
+   "blurb": "Every crater, at any zoom (NASA LRO)",
+   "family": "Moon",
+   "map": 200
+  },
+  {
+   "id": "mars_map",
+   "name": "Mars: whole map",
+   "blurb": "Craters, dunes, channels (CTX mosaic)",
+   "family": "Mars",
+   "map": 201
+  },
+  {
+   "id": "andromeda",
+   "name": "Andromeda",
+   "blurb": "Hubble's 1.5-gigapixel galaxy",
+   "family": "Andromeda",
+   "map": 202
+  },
+  {
+   "id": "webb_carina",
+   "name": "Carina nebula",
+   "blurb": "Webb's 'Cosmic Cliffs'",
+   "family": "Carina nebula",
+   "map": 203
+  },
+  {
+   "id": "space",
+   "name": "Deep space",
+   "blurb": "Thousands of galaxies from Hubble",
+   "family": "deep space",
+   "images": [
+    0
+   ]
+  },
+  {
+   "id": "moon",
+   "name": "Moon photo",
+   "blurb": "One close-up of craters",
+   "family": "Moon",
+   "images": [
+    1
+   ]
+  },
+  {
+   "id": "eyes",
+   "name": "Eyes",
+   "blurb": "Retina and cornea",
+   "family": "eyes",
+   "images": [
+    2,
+    3,
+    4
+   ]
+  },
+  {
+   "id": "tissue",
+   "name": "Cells & tissue",
+   "blurb": "Stained tissue under the microscope",
+   "family": "tissue",
+   "images": [
+    5,
+    6,
+    7
+   ]
+  },
+  {
+   "id": "glow",
+   "name": "Glowing cells",
+   "blurb": "Fluorescence microscopy",
+   "family": "glowing cells",
+   "images": [
+    8,
+    9,
+    10,
+    11,
+    12
+   ]
+  },
+  {
+   "id": "head",
+   "name": "Head scans",
+   "blurb": "Slices through a human head",
+   "family": "head scans",
+   "images": [
+    13,
+    14
+   ]
+  }
+ ]
+}

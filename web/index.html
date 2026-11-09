@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ePluribus · What are you made of?</title>
+  <meta name="description" content="Turn a face into 300 real science images (Martian craters, galaxies, eyeballs) and dare your friends to guess who it is.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="What are you made of?">
+  <meta property="og:description" content="A face, rebuilt from 300 real science images. Can you tell who it is?">
+  <meta property="og:image" content="og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0b0d12">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='12' cy='13' r='9' fill='%23ffb86b' fill-opacity='.7'/%3E%3Ccircle cx='20' cy='13' r='9' fill='%238ab4ff' fill-opacity='.7'/%3E%3Ccircle cx='16' cy='20' r='9' fill='%23ff6bd6' fill-opacity='.7'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">e<span>Pluribus</span></div>
+    <h1 class="hero">What are you made of?</h1>
+    <p class="tag">Turn a face into <b>300 real science images</b> (Martian craters, galaxies, eyeballs) stacked as light. Then dare your friends to guess who it is.</p>
+    <div class="row heroCtas" id="heroCtas">
+      <button id="demoBtn" class="primary big">Play a round</button>
+      <a href="#make" class="button secondary big">Make your own</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- shown when opening a shared link (or playing the demo) -->
+    <section id="replayIntro" class="card" hidden>
+      <h2>Who's hiding in here?</h2>
+      <p>Someone turned a face into <b id="replayCount"></b> science images. Hit play, then tap <b>I know who it is!</b> the second you recognise them. Fewer images, bigger bragging rights.</p>
+      <p class="muted small">The link only says which pieces of public science images to stack, and how bright. The original photo isn't in it and was never uploaded anywhere.</p>
+      <button id="makeOwnBtn" class="secondary">Make your own</button>
+    </section>
+
+    <div id="builder">
+      <section class="card" id="make">
+        <h2><span class="num">1</span> Pick a face</h2>
+        <div class="row">
+          <label class="button primary">Upload a photo<input type="file" id="fileInput" accept="image/*" hidden></label>
+          <button class="secondary" data-sample="mona">Mona Lisa</button>
+          <button class="secondary" data-sample="astronaut">Astronaut</button>
+          <button class="secondary" data-sample="cat">Cat</button>
+        </div>
+        <div id="cropArea" hidden>
+          <p class="muted small">Drag the square onto the face. Tight crops work best.</p>
+          <div class="cropWrap"><canvas id="cropCanvas"></canvas></div>
+          <label class="slider">Square size <input type="range" id="cropSize" min="8" max="100" value="60"></label>
+          <div class="previewRow">
+            <canvas id="targetPreview" width="64" height="64"></canvas>
+            <span class="muted small">The target. Your photo never leaves this device: nothing is uploaded.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span class="num">2</span> Pick your universe</h2>
+        <p class="muted small sub">Mix and match. The live maps hand out fresh random pieces every time, so no two builds are alike.</p>
+        <div id="packGrid" class="packGrid"></div>
+        <div class="own">
+          <label class="button secondary">Add your own images<input type="file" id="ownInput" accept="image/*" multiple hidden></label>
+          <span class="muted small">They stay on this device. Pictures made with them can't be shared as a link.</span>
+          <div id="ownThumbs" class="ownThumbs"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span class="num">3</span> Make it</h2>
+        <label class="slider">Images to stack: <b id="kLabel">300</b>
+          <input type="range" id="kInput" min="20" max="500" step="10" value="300"></label>
+        <div class="row">
+          <label class="toggle"><input type="checkbox" id="colourInput" checked> Colour</label>
+          <label class="select">Search through
+            <select id="poolInput">
+              <option value="4000">4,000 pieces (fast)</option>
+              <option value="8000" selected>8,000 pieces</option>
+              <option value="16000">16,000 pieces (sharpest)</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button id="buildBtn" class="primary big" disabled>Make it!</button>
+          <span id="buildHint" class="muted small">Pick a face first.</span>
+        </div>
+      </section>
+    </div>
+
+    <section id="stage" class="card" hidden>
+      <div class="stageGrid">
+        <div class="mainCol">
+          <canvas id="resultCanvas" width="64" height="64"></canvas>
+          <div class="statusRow"><span id="status"></span><button id="stopBtn" class="secondary small" hidden>Stop</button></div>
+          <div class="progress"><div id="progressBar"></div></div>
+          <p id="composition" class="composition" hidden></p>
+          <div class="row" id="playRow" hidden>
+            <button id="playBtn" class="primary">Play</button>
+            <button id="guessBtn" class="secondary" hidden>I know who it is!</button>
+          </div>
+          <div id="guessNote" class="guessNote" hidden>
+            <b id="guessText"></b>
+            <button id="challengeBtn" class="primary">Challenge a friend</button>
+          </div>
+          <label class="slider" id="scrubRow" hidden>Images stacked: <b id="scrubLabel"></b>
+            <input type="range" id="scrub" min="1" max="1" value="1"></label>
+          <label class="toggle" id="rawRow" hidden><input type="checkbox" id="rawInput"> Show the raw stacked light</label>
+          <figure id="gifBox" hidden>
+            <img id="gifPreview" alt="Animated GIF: every science image used, then each one added into the picture, ending with what it is made of">
+            <figcaption id="gifNote" class="muted small"></figcaption>
+          </figure>
+          <p id="rawNote" class="muted small" hidden>This is what stacked light really looks like: a bright glow with the face as a faint ripple on top. One black-level setting, the same for every pixel, removes the glow.</p>
+        </div>
+        <aside class="sideCol">
+          <div id="addingBox">
+            <div class="muted small">Now adding</div>
+            <canvas id="addingCanvas" width="64" height="64"></canvas>
+            <div id="addingLabel" class="small"></div>
+          </div>
+          <div id="targetBox">
+            <div class="muted small">The target (stays on your device)</div>
+            <canvas id="targetThumb" width="64" height="64"></canvas>
+          </div>
+          <div class="actions" id="actions" hidden>
+            <div class="muted small">Share it</div>
+            <button id="shareBtn" class="primary">Dare a friend</button>
+            <button id="gifBtn" class="secondary">Make a GIF</button>
+            <button id="downloadBtn" class="secondary">Save image</button>
+            <p id="shareNote" class="muted small"></p>
+          </div>
+        </aside>
+      </div>
+
+      <div id="sheetBlock" hidden>
+        <h3>All the pieces <span class="muted small">strongest first. Tap any one to see what it adds, and where in the universe it came from.</span></h3>
+        <div class="sheetWrap"><canvas id="sheet"></canvas><div id="sheetTip" class="tip" hidden></div></div>
+      </div>
+
+      <details class="how">
+        <summary>Wait, how does this work?</summary>
+        <p>Every piece is a square crop of a real science image, stretched to cover the <em>whole</em> frame. The computer adds them one at a time, always picking the crop whose pattern of light and dark best fills in what's still missing, then re-tunes the brightness of every piece so far.</p>
+        <p>Pieces can only add light, never take it away, like hundreds of slide projectors pointed at one screen. So the stack is a bright glow with the face as a faint ripple on top. One black-level setting, the same for every pixel, removes the glow.</p>
+        <p>One brightness per image. No masks, no per-pixel tricks: just whole images, added up. "32% Moon" is each source's share of the brightness &times; contrast that draws the picture.</p>
+      </details>
+      <details class="credits">
+        <summary>Image credits</summary>
+        <ul id="creditList"></ul>
+      </details>
+    </section>
+  </main>
+
+  <dialog id="pieceDialog" aria-labelledby="dlgTitle">
+    <div class="dlgHead"><b id="dlgTitle"></b><button id="dlgClose" class="secondary small" aria-label="Close">&times;</button></div>
+    <div class="dlgGrid">
+      <figure><canvas id="dlgPiece" width="256" height="256"></canvas><figcaption>This piece (the whole frame)</figcaption></figure>
+      <figure><canvas id="dlgPicture" width="256" height="256"></canvas><figcaption id="dlgPictureCap">The whole picture</figcaption></figure>
+    </div>
+    <p id="dlgInfo" class="small"></p>
+    <p id="dlgSource" class="muted small"></p>
+    <label class="toggle small"><input type="checkbox" id="dlgWithout"> Show the picture without this piece</label>
+    <div class="row">
+      <button id="dlgPrev" class="secondary small">&larr; Stronger</button>
+      <button id="dlgNext" class="secondary small">Weaker &rarr;</button>
+      <a id="dlgWhere" class="button primary small" target="_blank" rel="noopener" hidden>Visit this spot</a>
+    </div>
+  </dialog>
+
+  <footer class="muted small">Your photo never leaves your device. Science images from NASA, ESA, Esri/Murray Lab and scikit-image's sample data (credits under each picture).</footer>
+</body>
+</html>

@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/
+experiments/out/
+# outputs of the original prototype scripts
+/superpose.png
+/superpose_atoms.png
+/anim_state.pkl
+/*.gif
