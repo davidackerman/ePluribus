@@ -6,7 +6,7 @@ web/packs/packs.json, and sample target photos in web/samples/.
 Image ids in packs.json are stable: share links refer to images by id, so
 never renumber -- only append.
 
-NOTE: credits come from scikit-image's docstrings. Check each image's licence
+NOTE: credits come from scikit-image's docstrings. Check each image's license
 before publishing the site.
 
 Usage: python tools/make_packs.py
@@ -121,14 +121,14 @@ MAPS += [
     dict(id=210, key="clouds", name="Clouds", family="Earth", noDataBlack=True,  # gaps between orbits are black
          credit=f"NASA/NOAA (Suomi NPP VIIRS): the whole Earth on {GIBS_DAY}, via NASA GIBS",
          **gibs("VIIRS_SNPP_CorrectedReflectance_TrueColor", GIBS_DAY, 9, "jpeg")),
-    dict(id=211, key="mountains", name="Mountains in colour", family="landscapes", thumb_tile=(4, 11, 6),  # the Himalaya (colour shows at low zooms)
-         credit="NASA/METI/AIST/Japan Spacesystems and the U.S./Japan ASTER Science Team: ASTER GDEM colour shaded relief, via NASA GIBS",
+    dict(id=211, key="mountains", name="Mountains in color", family="landscapes", thumb_tile=(4, 11, 6),  # the Himalaya (color shows at low zooms)
+         credit="NASA/METI/AIST/Japan Spacesystems and the U.S./Japan ASTER Science Team: ASTER GDEM color shaded relief, via NASA GIBS",
          **gibs("ASTER_GDEM_Color_Shaded_Relief", "default", 12, "jpeg")),
     dict(id=212, key="mercury", name="Mercury", family="Mercury",
-         credit="NASA/Johns Hopkins APL/Carnegie Institution of Washington: MESSENGER MDIS enhanced-colour mosaic, via NASA Trek",
+         credit="NASA/Johns Hopkins APL/Carnegie Institution of Washington: MESSENGER MDIS enhanced-color mosaic, via NASA Trek",
          **trek("Mercury", "Mercury_MESSENGER_MDIS_Basemap_EnhancedColor_Mosaic_Global_665m", "jpg", 7)),
     dict(id=216, key="moon_heights", name="Moon heights", family="Moon",
-         credit="NASA/GSFC (LRO LOLA science team): colour shaded relief of the Moon, via NASA Trek",
+         credit="NASA/GSFC (LRO LOLA science team): color shaded relief of the Moon, via NASA Trek",
          **trek("Moon", "LRO_LOLA_ClrShade_Global_128ppd_v04", "png", 5)),
 ]
 
@@ -147,15 +147,15 @@ XYZ_SETS = [
     dict(id=214, key="small_worlds", name="Small worlds", family="small worlds", items=[
         dict(name="Vesta", family="Vesta", credit=DAWN.format("mosaic of Vesta"),
              **trek("Vesta", "Vesta_Dawn_FC_HAMO_Mosaic_Global_74ppd", "jpg", 6)),
-        dict(name="Ceres", family="Ceres", credit=DAWN.format("colour shaded relief of Ceres (DLR)"),
+        dict(name="Ceres", family="Ceres", credit=DAWN.format("color shaded relief of Ceres (DLR)"),
              **trek("Ceres", "Ceres_Dawn_FC_HAMO_ClrShade_DLR_Global_60ppd_Oct2016", "jpg", 5)),
         dict(name="Phobos", family="Phobos", credit="NASA/JPL (Viking Orbiters), DLR: Phobos mosaic, via NASA Trek",
              **trek("Phobos", "Phobos_Viking_Mosaic_40ppd_DLRcontrol", "jpg", 5)),
     ]),
-    dict(id=215, key="mars_colour", name="Mars in colour", family="Mars", items=[
-        dict(name="Mars: Viking colour map", credit="NASA/JPL/USGS: Viking MDIM 2.1 colour mosaic of Mars, via NASA Trek",
+    dict(id=215, key="mars_color", name="Mars in color", family="Mars", items=[
+        dict(name="Mars: Viking color map", credit="NASA/JPL/USGS: Viking MDIM 2.1 color mosaic of Mars, via NASA Trek",
              **trek("Mars", "Mars_Viking_MDIM21_ClrMosaic_global_232m", "jpg", 7)),
-        dict(name="Mars: heights", credit="NASA/JPL/GSFC (MGS MOLA science team): colour shaded relief of Mars, via NASA Trek",
+        dict(name="Mars: heights", credit="NASA/JPL/GSFC (MGS MOLA science team): color shaded relief of Mars, via NASA Trek",
              **trek("Mars", "Mars_MGS_MOLA_ClrShade_merge_global_463m", "jpg", 7)),
     ]),
 ]
@@ -225,7 +225,7 @@ TABS = [("space", "Space"), ("planets", "Planets"), ("earth", "Earth & nature"),
 PACK_DEFS = [
     ("andromeda", "Andromeda", "Hubble's 1.5-gigapixel galaxy", 202, "Andromeda", "space"),
     ("webb_carina", "Carina nebula", "Webb's 'Cosmic Cliffs'", 203, "Carina nebula", "space"),
-    ("hubble", "Hubble's greatest hits", "The 100 favourites, at full size", 204, "Hubble", "space"),
+    ("hubble", "Hubble's greatest hits", "The 100 favorites, at full size", 204, "Hubble", "space"),
     ("webb", "Webb's greatest hits", "Every big Webb picture so far", 205, "Webb", "space"),
     ("eso", "ESO's greatest hits", "Chile's giant telescopes: nebulae, galaxies, the Milky Way", 217, "ESO", "space"),
     ("nebulae", "Nebulae", "Crab, Helix, Orion, Pillars of Creation", "commons:nebulae", "nebulae", "space"),
@@ -234,17 +234,17 @@ PACK_DEFS = [
     ("mars_map", "Mars: whole map", "Craters, dunes, channels (CTX mosaic)", 201, "Mars", "planets"),
     ("planets", "Planets", "Jupiter, Saturn, Venus, Pluto, Earthrise", "commons:planets", "planets", "planets"),
     ("moon", "Moon photo", "One close-up of craters", [1], "Moon", "planets"),
-    ("mercury", "Mercury", "MESSENGER's colour map", 212, "Mercury", "planets"),
-    ("mars_colour", "Mars in colour", "Viking's colour map, and heights", 215, "Mars", "planets"),
-    ("moon_heights", "Moon heights", "LRO's colour height map", 216, "Moon", "planets"),
+    ("mercury", "Mercury", "MESSENGER's color map", 212, "Mercury", "planets"),
+    ("mars_color", "Mars in color", "Viking's color map, and heights", 215, "Mars", "planets"),
+    ("moon_heights", "Moon heights", "LRO's color height map", 216, "Moon", "planets"),
     ("jupiter_moons", "Jupiter's moons", "Europa, Ganymede, Callisto", 213, "Jupiter's moons", "planets"),
     ("small_worlds", "Small worlds", "Vesta, Ceres, Phobos", 214, "small worlds", "planets"),
     ("earth_space", "Earth from orbit", "Auroras, city lights, deserts (NASA)", "commons:earth_space", "Earth", "earth"),
     ("earth_day", "Earth by day", "NASA's Blue Marble, any zoom", 207, "Earth", "earth"),
     ("earth_night", "Earth at night", "City lights from orbit", 208, "Earth", "earth"),
     ("clouds", "Clouds", "One day of the whole planet's weather", 210, "Earth", "earth"),
-    ("ocean_temp", "Ocean temperatures", "One day of sea warmth, in colour", 209, "oceans", "earth"),
-    ("mountains", "Mountains in colour", "Every peak's height (ASTER)", 211, "landscapes", "earth"),
+    ("ocean_temp", "Ocean temperatures", "One day of sea warmth, in color", 209, "oceans", "earth"),
+    ("mountains", "Mountains in color", "Every peak's height (ASTER)", 211, "landscapes", "earth"),
     ("landscapes", "Landscapes", "Peaks, dunes, canyons", "commons:landscapes", "landscapes", "earth"),
     ("oceans", "Oceans", "Reefs, kelp forests, sea life", "commons:oceans", "oceans", "earth"),
     ("cells_em", "Inside cells", "Electron microscope volumes from Janelia (OpenOrganelle)", 206, "cells (EM)", "life"),
@@ -372,7 +372,7 @@ def commons_info(titles):
     for i in range(0, len(titles), 40):
         q = urllib.parse.urlencode({"action": "query", "format": "json", "prop": "imageinfo", "iiprop": "url|extmetadata",
                                     "iiurlwidth": 1024, "titles": "|".join(titles[i:i + 40])})
-        d = json.loads(fetch(f"https://commons.wikimedia.org/w/api.php?{q}", cache=False))  # licences: always fresh
+        d = json.loads(fetch(f"https://commons.wikimedia.org/w/api.php?{q}", cache=False))  # licenses: always fresh
         for page in d["query"]["pages"].values():
             if "imageinfo" in page:
                 out[page["title"]] = page["imageinfo"][0]
@@ -420,7 +420,7 @@ for key, titles in picks.items():
         ii = infos[t]
         md = ii["extmetadata"]
         lic = strip_html(md.get("LicenseShortName", {}).get("value"))
-        assert lic in ("Public domain", "CC0"), f"{t}: licence is now {lic!r}"
+        assert lic in ("Public domain", "CC0"), f"{t}: license is now {lic!r}"
         stem = f"{key}_{j}"
         if (PACKS / f"{stem}.jpg").exists():  # already shipped: keep it byte for byte (share links crop it)
             im = Image.open(PACKS / f"{stem}.jpg").convert("RGB")
@@ -509,7 +509,7 @@ def esa_top100(site):
     return ids
 
 
-hubble = esa_items("hubble", esa_top100("hubble"), skip={"heic1502a"})[:100]  # the 100 favourites (Andromeda is a map of its own)
+hubble = esa_items("hubble", esa_top100("hubble"), skip={"heic1502a"})[:100]  # the 100 favorites (Andromeda is a map of its own)
 webb_ids = esa_top100("webb") + [f"weic{y}{n:02d}a" for y in (22, 23, 24, 25) for n in range(1, 41)]
 webb = esa_items("webb", list(dict.fromkeys(webb_ids)), skip={"weic2205a"})  # so is Carina
 eso = esa_items("eso", esa_top100("eso"), skip=set())[:150]
@@ -704,13 +704,13 @@ for st in SETS:
         thumbs = [save_thumb(im, f"{st['key']}_{j}") for j, (_, im) in enumerate(cands)]
         for it in st["items"]:
             it.pop("_thumb_score", None)
-    if st["kind"] == "image":  # pictures: the three most colourful of the first fifteen (Hasler-Suesstrunk)
-        def colourful(im):
+    if st["kind"] == "image":  # pictures: the three most colorful of the first fifteen (Hasler-Suesstrunk)
+        def colorful(im):
             a = np.asarray(im.resize((128, 128)), dtype=float)
             rg, yb = a[..., 0] - a[..., 1], (a[..., 0] + a[..., 1]) / 2 - a[..., 2]
             return math.hypot(rg.std(), yb.std()) + 0.3 * math.hypot(rg.mean(), yb.mean())
         cands = [Image.open(io.BytesIO(fetch(it["thumb_url"]))).convert("RGB") for it in st["items"][:15]]
-        thumbs = [save_thumb(im, f"{st['key']}_{j}") for j, im in enumerate(sorted(cands, key=colourful, reverse=True)[:3])]
+        thumbs = [save_thumb(im, f"{st['key']}_{j}") for j, im in enumerate(sorted(cands, key=colorful, reverse=True)[:3])]
     for it in st["items"] if not thumbs else []:  # the first three images that have a thumbnail
         b = fetch_ok(it["thumb_url"]) if "thumb_url" in it else None
         im = (Image.open(io.BytesIO(b)).convert("RGB") if b else busiest_tile(it) if "url" in it

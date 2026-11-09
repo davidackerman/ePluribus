@@ -114,13 +114,13 @@ async function gatherSources(run) {
   const fetched = await mapLimit(maps, 6, async (p, mi) => {
     const spec = state.mapById.get(p.map);
     try {
-      return await gatherTiles(spec, perMap, rand, { cancelled: () => run.cancelled, onProgress: (k) => { counts[mi] = k; report(); } });
+      return await gatherTiles(spec, perMap, rand, { canceled: () => run.canceled, onProgress: (k) => { counts[mi] = k; report(); } });
     } catch (err) {
       console.warn(`couldn't use ${spec.name}`, err);
       return [];
     }
   });
-  if (run.cancelled) throw new Error("stopped");
+  if (run.canceled) throw new Error("stopped");
   fetched.forEach((tiles, mi) => {
     const spec = state.mapById.get(maps[mi].map);
     if (tiles.length) groups.push(tiles.map((t) => tileSource(spec, t)));
@@ -208,7 +208,7 @@ function scheduleCrop() {
   requestAnimationFrame(() => {
     cropPending = false;
     drawCrop();
-    const C = $("colourInput").checked ? 3 : 1;
+    const C = $("colorInput").checked ? 3 : 1;
     drawFloat($("targetPreview"), targetVec(C), C, N);
   });
 }
@@ -462,13 +462,13 @@ function showAdding(run, i, step = i + 1) {
 }
 
 async function build() {
-  if (state.run) state.run.cancelled = true;
+  if (state.run) state.run.canceled = true;
   state.busy = true;
   updateBuildButton();
-  const C = $("colourInput").checked ? 3 : 1, K = +$("kInput").value, want = +$("poolInput").value;
+  const C = $("colorInput").checked ? 3 : 1, K = +$("kInput").value, want = +$("poolInput").value;
   const minFrac = +$("pieceInput").value, rotate = $("rotateInput").checked; // advanced: make it harder
-  const neutral = C === 3 && $("pureInput").checked; // colour only from the images: one shared black level
-  const run = { C, K, replay: false, cancelled: false, pieces: [], order: [], wHist: [], atoms64: [] };
+  const neutral = C === 3 && $("pureInput").checked; // color only from the images: one shared black level
+  const run = { C, K, replay: false, canceled: false, pieces: [], order: [], wHist: [], atoms64: [] };
   state.run = run;
   showStage({ replay: false });
   setStatus("Loading images…");
@@ -485,7 +485,7 @@ async function build() {
       setStatus(`Cutting ${pb.done.toLocaleString()} of ${want.toLocaleString()} crops…`);
       setProgress((pb.done / want) * 0.1);
       await nextFrame();
-      if (run.cancelled) throw new Error("stopped");
+      if (run.canceled) throw new Error("stopped");
     }
 
     // strict settings can leave fewer distinct crops than asked for
@@ -510,7 +510,7 @@ async function build() {
     const marks = new Int32Array(workers.length).fill(-1);
     $("stopBtn").hidden = false;
     let lastDraw = 0;
-    for (let k = 0; k < K && !run.cancelled; k++) {
+    for (let k = 0; k < K && !run.canceled; k++) {
       const res = fit.residualF32();
       const replies = await Promise.all(workers.map((wk, i) => call(wk, { type: "score", res, mark: marks[i] })));
       let bi = -1;
@@ -536,7 +536,7 @@ async function build() {
       if (k < 6) await sleep(300); // let people see the first few arrive
     }
   } catch (err) {
-    if (run.cancelled) setStatus("Stopped.");
+    if (run.canceled) setStatus("Stopped.");
     else { console.error(err); setStatus(`Something went wrong: ${err.message}`); }
   } finally {
     run.workers?.forEach((w) => w.terminate());
@@ -1210,7 +1210,7 @@ async function startReplay(code) {
   $("playRow").hidden = false;
   $("guessBtn").hidden = false;
   $("playBtn").textContent = "Play";
-  setStatus("Hit play, then tap “I got it!” the moment you recognise it.");
+  setStatus("Hit play, then tap “I got it!” the moment you recognize it.");
 }
 
 // "Guess who": the replay's game. Record how many images it took, reveal, and offer a
@@ -1298,9 +1298,9 @@ async function init() {
   }
   $("ownInput").addEventListener("change", (e) => { addOwnImages([...e.target.files]); e.target.value = ""; });
   $("kInput").addEventListener("input", (e) => { $("kLabel").textContent = e.target.value; });
-  $("colourInput").addEventListener("change", () => { $("pureInput").disabled = !$("colourInput").checked; scheduleCrop(); });
+  $("colorInput").addEventListener("change", () => { $("pureInput").disabled = !$("colorInput").checked; scheduleCrop(); });
   $("buildBtn").addEventListener("click", build);
-  $("stopBtn").addEventListener("click", () => { if (state.run) state.run.cancelled = true; });
+  $("stopBtn").addEventListener("click", () => { if (state.run) state.run.canceled = true; });
   const stopPlaying = () => { if (state.run?.playing) state.run.playing = false; };
   $("scrub").addEventListener("pointerdown", stopPlaying);
   $("scrub").addEventListener("keydown", stopPlaying);
@@ -1322,7 +1322,7 @@ async function init() {
     if (!run?.gifFile) return;
     try {
       await navigator.share({ files: [run.gifFile], text: `What are you made of? This one's ${compositionText(run, 4)}.` });
-    } catch { /* cancelled */ }
+    } catch { /* canceled */ }
   });
   $("shareBtn").addEventListener("click", share);
   $("makeOwnBtn").addEventListener("click", () => { location.href = location.pathname; });

@@ -911,9 +911,9 @@
   {
    "id": 211,
    "key": "mountains",
-   "name": "Mountains in colour",
+   "name": "Mountains in color",
    "family": "landscapes",
-   "credit": "NASA/METI/AIST/Japan Spacesystems and the U.S./Japan ASTER Science Team: ASTER GDEM colour shaded relief, via NASA GIBS",
+   "credit": "NASA/METI/AIST/Japan Spacesystems and the U.S./Japan ASTER Science Team: ASTER GDEM color shaded relief, via NASA GIBS",
    "kind": "xyz",
    "tileSize": 256,
    "maxZoom": 12,
@@ -927,7 +927,7 @@
    "key": "mercury",
    "name": "Mercury",
    "family": "Mercury",
-   "credit": "NASA/Johns Hopkins APL/Carnegie Institution of Washington: MESSENGER MDIS enhanced-colour mosaic, via NASA Trek",
+   "credit": "NASA/Johns Hopkins APL/Carnegie Institution of Washington: MESSENGER MDIS enhanced-color mosaic, via NASA Trek",
    "kind": "xyz",
    "tileSize": 256,
    "maxZoom": 7,
@@ -941,7 +941,7 @@
    "key": "moon_heights",
    "name": "Moon heights",
    "family": "Moon",
-   "credit": "NASA/GSFC (LRO LOLA science team): colour shaded relief of the Moon, via NASA Trek",
+   "credit": "NASA/GSFC (LRO LOLA science team): color shaded relief of the Moon, via NASA Trek",
    "kind": "xyz",
    "tileSize": 256,
    "maxZoom": 5,
@@ -1017,7 +1017,7 @@
     {
      "name": "Ceres",
      "family": "Ceres",
-     "credit": "NASA/JPL-Caltech/UCLA/MPS/DLR/IDA: Dawn Framing Camera colour shaded relief of Ceres (DLR), via NASA Trek",
+     "credit": "NASA/JPL-Caltech/UCLA/MPS/DLR/IDA: Dawn Framing Camera color shaded relief of Ceres (DLR), via NASA Trek",
      "tileSize": 256,
      "maxZoom": 5,
      "width": 16384,
@@ -1045,13 +1045,13 @@
   },
   {
    "id": 215,
-   "key": "mars_colour",
-   "name": "Mars in colour",
+   "key": "mars_color",
+   "name": "Mars in color",
    "family": "Mars",
    "items": [
     {
-     "name": "Mars: Viking colour map",
-     "credit": "NASA/JPL/USGS: Viking MDIM 2.1 colour mosaic of Mars, via NASA Trek",
+     "name": "Mars: Viking color map",
+     "credit": "NASA/JPL/USGS: Viking MDIM 2.1 color mosaic of Mars, via NASA Trek",
      "tileSize": 256,
      "maxZoom": 7,
      "width": 65536,
@@ -1060,7 +1060,7 @@
     },
     {
      "name": "Mars: heights",
-     "credit": "NASA/JPL/GSFC (MGS MOLA science team): colour shaded relief of Mars, via NASA Trek",
+     "credit": "NASA/JPL/GSFC (MGS MOLA science team): color shaded relief of Mars, via NASA Trek",
      "tileSize": 256,
      "maxZoom": 7,
      "width": 65536,
@@ -1069,10 +1069,10 @@
     }
    ],
    "kind": "xyz",
-   "thumb": "thumbs/mars_colour_0.jpg",
+   "thumb": "thumbs/mars_color_0.jpg",
    "thumbs": [
-    "thumbs/mars_colour_0.jpg",
-    "thumbs/mars_colour_1.jpg"
+    "thumbs/mars_color_0.jpg",
+    "thumbs/mars_color_1.jpg"
    ]
   },
   {
@@ -12649,7 +12649,7 @@
   {
    "id": "hubble",
    "name": "Hubble's greatest hits",
-   "blurb": "The 100 favourites, at full size",
+   "blurb": "The 100 favorites, at full size",
    "family": "Hubble",
    "tab": "space",
    "map": 204
@@ -12743,15 +12743,15 @@
   {
    "id": "mercury",
    "name": "Mercury",
-   "blurb": "MESSENGER's colour map",
+   "blurb": "MESSENGER's color map",
    "family": "Mercury",
    "tab": "planets",
    "map": 212
   },
   {
-   "id": "mars_colour",
-   "name": "Mars in colour",
-   "blurb": "Viking's colour map, and heights",
+   "id": "mars_color",
+   "name": "Mars in color",
+   "blurb": "Viking's color map, and heights",
    "family": "Mars",
    "tab": "planets",
    "map": 215
@@ -12759,7 +12759,7 @@
   {
    "id": "moon_heights",
    "name": "Moon heights",
-   "blurb": "LRO's colour height map",
+   "blurb": "LRO's color height map",
    "family": "Moon",
    "tab": "planets",
    "map": 216
@@ -12824,14 +12824,14 @@
   {
    "id": "ocean_temp",
    "name": "Ocean temperatures",
-   "blurb": "One day of sea warmth, in colour",
+   "blurb": "One day of sea warmth, in color",
    "family": "oceans",
    "tab": "earth",
    "map": 209
   },
   {
    "id": "mountains",
-   "name": "Mountains in colour",
+   "name": "Mountains in color",
    "blurb": "Every peak's height (ASTER)",
    "family": "landscapes",
    "tab": "earth",

@@ -1,4 +1,4 @@
-// gif.js - a small animated-GIF encoder (GIF89a, one shared 256-colour palette).
+// gif.js - a small animated-GIF encoder (GIF89a, one shared 256-color palette).
 // encodeGif(frames, width, height) -> Uint8Array
 //   frames: [{ rgba: Uint8ClampedArray(width*height*4), delay: milliseconds }]
 
@@ -8,7 +8,7 @@ export function encodeGif(frames, width, height) {
   const out = new ByteWriter();
   out.str("GIF89a");
   out.u16(width); out.u16(height);
-  out.u8(0xf7); out.u8(0); out.u8(0); // global colour table, 256 entries
+  out.u8(0xf7); out.u8(0); out.u8(0); // global color table, 256 entries
   for (let i = 0; i < 256; i++) out.u8(palette[i * 3]), out.u8(palette[i * 3 + 1]), out.u8(palette[i * 3 + 2]);
   out.u8(0x21); out.u8(0xff); out.u8(11); out.str("NETSCAPE2.0"); out.u8(3); out.u8(1); out.u16(0); out.u8(0); // loop forever
   const idx = new Uint8Array(width * height);

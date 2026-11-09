@@ -1,8 +1,8 @@
-"""Colour tests for full-frame superposition (face target, add-only light).
+"""Color tests for full-frame superposition (face target, add-only light).
 
-(a) one dimmer per image: each image keeps its own colours, one weight >= 0.
-(b) colour filter per image: three weights >= 0 (R, G, B gains) per image,
-    like a projector with a coloured gel. Still uniform across the image.
+(a) one dimmer per image: each image keeps its own colors, one weight >= 0.
+(b) color filter per image: three weights >= 0 (R, G, B gains) per image,
+    like a projector with a colored gel. Still uniform across the image.
 Both use a per-channel black level (subtract an even glow in R, G and B).
 
 Usage: python experiments/color_tests.py [out_dir]
@@ -53,7 +53,7 @@ SRCS = {"hubble": d.hubble_deep_field() / 255.0, "moon": d.moon() / 255.0, "reti
 SRCS = {k: rgbify(v) for k, v in SRCS.items()}
 PILS = {k: chans(v) for k, v in SRCS.items()}
 
-# ---- dictionary: colour crops stretched to the full frame (same recipe as grayscale)
+# ---- dictionary: color crops stretched to the full frame (same recipe as grayscale)
 rng = np.random.default_rng(0)
 names = list(SRCS)
 share = np.array([8.0 if min(SRCS[k].shape[:2]) > 200 else 1.0 for k in names])
@@ -79,7 +79,7 @@ for c in range(3):
     A[c * NN:(c + 1) * NN] -= A[c * NN:(c + 1) * NN].mean(0)
 norm = np.maximum(np.linalg.norm(A, axis=0), 1e-6)
 norm_ch = np.maximum(np.stack([np.linalg.norm(A[c * NN:(c + 1) * NN], axis=0) for c in range(3)]), 1e-6)
-log(f"dictionary: {A.shape[1]} colour pieces")
+log(f"dictionary: {A.shape[1]} color pieces")
 
 tv = vec(target)
 tmean = np.array([tv[c * NN:(c + 1) * NN].mean() for c in range(3)])
@@ -109,7 +109,7 @@ def run_one_dimmer():
     return snaps, S, w
 
 
-def run_colour_filter():
+def run_color_filter():
     res, S, snaps = tc.copy(), [], {}
     blocks = [slice(c * NN, (c + 1) * NN) for c in range(3)]
     for k in range(1, K + 1):
@@ -140,11 +140,11 @@ def corr(img):
 
 log("(a) one dimmer per image")
 sa, Sa, wa = run_one_dimmer()
-log("(b) colour filter per image")
-sb, Sb, wb = run_colour_filter()
+log("(b) color filter per image")
+sb, Sb, wb = run_color_filter()
 
 fig, ax = plt.subplots(3, 4, figsize=(12, 9.6))
-for r_i, (label, snaps) in enumerate((("(a) one dimmer per image", sa), ("(b) colour filter per image", sb))):
+for r_i, (label, snaps) in enumerate((("(a) one dimmer per image", sa), ("(b) color filter per image", sb))):
     ax[r_i, 0].imshow(target)
     ax[r_i, 0].set_title(f"target\n{label}", fontsize=9)
     for c_i, k in enumerate(KS, start=1):

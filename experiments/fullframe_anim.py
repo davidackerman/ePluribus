@@ -136,7 +136,7 @@ def txt(im, xy, s, f=None, fill=(220, 220, 230), anchor="mm"):
     ImageDraw.Draw(im).text(xy, s, fill=fill, font=f or font, anchor=anchor)
 
 
-def place(canvas, img, cx, cy, s, S):  # tilt plane by s in [0,1], centre at (cx,cy)
+def place(canvas, img, cx, cy, s, S):  # tilt plane by s in [0,1], center at (cx,cy)
     a, b = 1 - 0.45 * s, -0.22 * s
     data = (1 / a, 0, S / 2 - cx / a, -(b / a), 1, S / 2 - cy + (b / a) * cx)
     canvas.alpha_composite(img.transform((W, H), Image.AFFINE, data, resample=Image.BILINEAR))

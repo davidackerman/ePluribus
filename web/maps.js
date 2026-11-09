@@ -109,7 +109,7 @@ function openImage(spec) {
 }
 
 // Neuroglancer precomputed volumes: chunk files named x0-x1_y0-y1_z0-z1; a JPEG chunk is the
-// chunk's voxels in x-fastest order, as one grey image's pixels.
+// chunk's voxels in x-fastest order, as one gray image's pixels.
 function openPrecomputed(spec) {
   const zooms = spec.scales.map((sc, z) => ({
     z, nx: Math.ceil(sc.size[0] / sc.chunk[0]), ny: Math.ceil(sc.size[1] / sc.chunk[1]), nz: Math.ceil(sc.size[2] / sc.chunk[2]),
@@ -126,12 +126,12 @@ function openPrecomputed(spec) {
     const sc = spec.scales[t.z];
     return `${spec.base}/${sc.key}/${range(sc, 0, t.x)[2]}_${range(sc, 1, t.y)[2]}_${range(sc, 2, t.e >> 2)[2]}`;
   };
-  const chunks = new Map(); // url -> Promise of grey voxels; a few chunks give three tiles each
+  const chunks = new Map(); // url -> Promise of gray voxels; a few chunks give three tiles each
   const chunk = (t) => {
     const u = chunkUrl(t);
     if (!chunks.has(u)) {
       if (chunks.size >= 32) chunks.delete(chunks.keys().next().value);
-      chunks.set(u, fetchImage(u, { grey: true }).catch(() => null));
+      chunks.set(u, fetchImage(u, { gray: true }).catch(() => null));
     }
     return chunks.get(u);
   };
@@ -147,13 +147,13 @@ function openPrecomputed(spec) {
       if (!v) return null;
       const sc = spec.scales[t.z], [x0, x1] = range(sc, 0, t.x), [y0, y1] = range(sc, 1, t.y), [z0, z1] = range(sc, 2, t.e >> 2);
       const X = x1 - x0, Y = y1 - y0, Z = z1 - z0;
-      if (v.grey.length !== X * Y * Z) return null;
+      if (v.gray.length !== X * Y * Z) return null;
       const axis = t.e & 3, [w, h] = axis === 0 ? [X, Y] : axis === 1 ? [X, Z] : [Y, Z];
       const at = axis === 0 ? (i, j) => i + X * (j + Y * (Z >> 1))
         : axis === 1 ? (i, j) => i + X * ((Y >> 1) + Y * j)
         : (i, j) => (X >> 1) + X * (i + Y * j);
       const rgb = new Uint8Array(w * h * 3);
-      for (let j = 0, q = 0; j < h; j++) for (let i = 0; i < w; i++, q += 3) rgb[q] = rgb[q + 1] = rgb[q + 2] = v.grey[at(i, j)];
+      for (let j = 0, q = 0; j < h; j++) for (let i = 0; i < w; i++, q += 3) rgb[q] = rgb[q + 1] = rgb[q + 2] = v.gray[at(i, j)];
       return { w, h, rgb };
     },
   };
@@ -169,7 +169,7 @@ async function complete(blob) {
   return false;
 }
 
-async function decode(blob, grey = false) {
+async function decode(blob, gray = false) {
   const bmp = await createImageBitmap(blob, { colorSpaceConversion: "none", premultiplyAlpha: "none" });
   const w = bmp.width, h = bmp.height;
   const cv = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(w, h) : Object.assign(document.createElement("canvas"), { width: w, height: h });
@@ -177,10 +177,10 @@ async function decode(blob, grey = false) {
   ctx.drawImage(bmp, 0, 0);
   bmp.close?.();
   const d = ctx.getImageData(0, 0, w, h).data;
-  if (grey) {
+  if (gray) {
     const g = new Uint8Array(w * h);
     for (let i = 0, j = 0; i < d.length; i += 4, j++) g[j] = d[i];
-    return { w, h, grey: g };
+    return { w, h, gray: g };
   }
   const rgb = new Uint8Array(w * h * 3);
   for (let i = 0, j = 0; i < d.length; i += 4, j += 3) { rgb[j] = d[i]; rgb[j + 1] = d[i + 1]; rgb[j + 2] = d[i + 2]; }
@@ -208,8 +208,8 @@ function isFlat(t) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** One image file as { w, h, rgb } (or { w, h, grey }), or null if there is none (or it came back broken). */
-async function fetchImage(url, { grey = false } = {}) {
+/** One image file as { w, h, rgb } (or { w, h, gray }), or null if there is none (or it came back broken). */
+async function fetchImage(url, { gray = false } = {}) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const r = await fetch(url);
@@ -217,7 +217,7 @@ async function fetchImage(url, { grey = false } = {}) {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const blob = await r.blob();
       if (!(await complete(blob))) return null;
-      return await decode(blob, grey);
+      return await decode(blob, gray);
     } catch (e) {
       // a server error sent without CORS headers reaches us as a TypeError: give up after
       // two tries (as coresample does); other failures get three
@@ -255,7 +255,7 @@ export const tilesFor = (spec, n) => (spec.kind === "image" ? Math.min(n, PICTUR
 
 /** `count` random, usable tiles of a live source (random image of a set, random zoom,
  * random place): [{ item, z, x, y, w, h, rgb }]. */
-export async function gatherTiles(spec, count, rand, { onProgress, cancelled, concurrency = 6 } = {}) {
+export async function gatherTiles(spec, count, rand, { onProgress, canceled, concurrency = 6 } = {}) {
   count = tilesFor(spec, count);
   const per = spec.kind === "image" ? 1 : PER_ITEM;
   const items = spec.items ? distinct(spec.items.length, Math.min(spec.items.length, Math.ceil(count / per)), rand) : [0];
@@ -267,7 +267,7 @@ export async function gatherTiles(spec, count, rand, { onProgress, cancelled, co
     const noData = map.spec.noDataBlack, seen = new Set(), maxAttempts = want * 5, mine = [];
     let attempts = 0;
     const worker = async () => {
-      while (mine.length < want && attempts < maxAttempts && !cancelled?.()) {
+      while (mine.length < want && attempts < maxAttempts && !canceled?.()) {
         attempts++;
         for (const t of map.pick(rand)) {
           const key = `${t.z}/${t.x}/${t.y}/${t.e}`;

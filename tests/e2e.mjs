@@ -31,7 +31,7 @@ const setScrub = (pg, v) => pg.evaluate((v) => {
 }, v);
 const log = (...a) => console.log(...a);
 
-// ---- build (astronaut, default packs incl. live maps, 300 images, colour)
+// ---- build (astronaut, default packs incl. live maps, 300 images, color)
 const page = await ctx.newPage();
 watch(page, "builder");
 await page.goto(URL);

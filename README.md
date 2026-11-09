@@ -15,9 +15,9 @@ see if your friends can guess what it is.
   planets, Earth & nature, life & medicine, art), all on by default. Watch it assemble and get
   a breakdown like *"37% tissue · 26% Moon · 13% Andromeda · 13% Mars · 11% eyes"*.
 - **Share it:** a share link replays the build image by image; your friend taps *I got it!*
-  the moment they recognise it, and can share their score back. There's also a built-in round
+  the moment they recognize it, and can share their score back. There's also a built-in round
   to try (a famous face).
-- **Settings:** images to stack and colour up front; under *Advanced settings*, how many
+- **Settings:** images to stack and color up front; under *Advanced settings*, how many
   candidates to search and two ways to make it harder: each piece must show at least a
   quarter / half / all of its image (no zooming into tiny details), and no turning or
   flipping. The defaults allow any crop, turned any way.
@@ -38,9 +38,9 @@ Every piece is a square crop of a real image, stretched to cover the whole frame
 chosen greedily (non-negative matching pursuit) from thousands of random candidates: each step
 adds the crop whose pattern of light and dark best fills in what's still missing, then
 re-solves every piece's brightness (weights >= 0, like slide projectors on one screen). A
-black level - the same grey subtracted from every pixel - removes the resulting glow, so the
-colours come only from the images. (Switch off *Colour only from the images* to use one black
-level per colour channel instead, which also matches your photo's overall colour, like a white
+black level - the same gray subtracted from every pixel - removes the resulting glow, so the
+colors come only from the images. (Switch off *Color only from the images* to use one black
+level per color channel instead, which also matches your photo's overall color, like a white
 balance.) Each piece has a single brightness for the whole image - no masks, no per-pixel
 tricks. "37% Moon" is each source's share of brightness x contrast.
 
@@ -82,8 +82,8 @@ read tile by tile from their hosts (all of which allow it from a web page), as i
 
 | Pack | Source |
 | --- | --- |
-| Moon, Mars, Mercury, Moon heights, Mars in colour, Jupiter's moons (Europa, Ganymede, Callisto), small worlds (Vesta, Ceres, Phobos) | global mosaics via [NASA Trek](https://trek.nasa.gov) (Mars CTX via Esri) |
-| Earth by day, Earth at night, Clouds, Ocean temperatures, Mountains in colour | NASA [GIBS](https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api) Earth layers |
+| Moon, Mars, Mercury, Moon heights, Mars in color, Jupiter's moons (Europa, Ganymede, Callisto), small worlds (Vesta, Ceres, Phobos) | global mosaics via [NASA Trek](https://trek.nasa.gov) (Mars CTX via Esri) |
+| Earth by day, Earth at night, Clouds, Ocean temperatures, Mountains in color | NASA [GIBS](https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api) Earth layers |
 | Andromeda, Carina nebula, Hubble's greatest hits (100 images), Webb's greatest hits (206 images), ESO's greatest hits (56 images) | ESA/Hubble, ESA/Webb and ESO zoomable archives (CC BY 4.0) |
 | Landscape paintings, Japanese prints, Nature plates, Abstract art (914 pictures) | Wikimedia Commons, streamed as 960 px thumbnails: public-domain files from hand-picked categories (Moran, Bierstadt, Friedrich, Aivazovsky, Monet's water lilies; Hiroshige, Hasui, Koson; Audubon, Haeckel, Redouté; Kandinsky, Hilma af Klint, Owen Jones), with keyword screens (safe for work; no book pages, stamps or photos of studios) and every picture checked by eye |
 | Inside cells (9 electron-microscope volumes: HeLa, macrophage, Jurkat T cell, breast cancer cell, mouse pancreas, choroid plexus, more HeLa) | Janelia's [OpenOrganelle](https://openorganelle.janelia.org) (CC BY 4.0), the JPEG Neuroglancer copies |
@@ -99,7 +99,7 @@ browser readers are in `web/maps.js`.
 ## Sharing and privacy
 
 - **What a link holds:** a *recipe*, not the photo - for each piece, which public image (or
-  map tile), crop position, size, rotation and brightness, plus the average colour (see
+  map tile), crop position, size, rotation and brightness, plus the average color (see
   `encodeRecipe` in `web/core.js`), and whether the black level was shared or per channel.
   It lives after the `#`, which browsers don't send to the
   server. Anyone with the link can rebuild the (blurry) picture; that's what sharing means.
@@ -134,7 +134,7 @@ Share GIF appears where the device can share files; Download GIF works everywher
 | Path | What |
 |---|---|
 | `web/index.html`, `app.js`, `style.css` | The page. |
-| `web/core.js` | The maths: resampling, candidate pool, scoring, weight solver, rendering, recipes. No DOM. |
+| `web/core.js` | The math: resampling, candidate pool, scoring, weight solver, rendering, recipes. No DOM. |
 | `web/worker.js` | Scoring worker: holds a slice of the candidate pool. |
 | `web/maps.js` | Live-map readers (web-map tiles, Zoomify): random tiles, decoys. |
 | `web/share.js`, `web/stats.js`, `web/config.js` | Short encrypted share links; optional anonymous counts; deployment settings. |
@@ -149,7 +149,7 @@ Share GIF appears where the device can share files; Download GIF works everywher
 | `tests/e2e.mjs` | Browser test (Playwright + system Chrome): build, share, replay, GIF, demo, phone layout. |
 | `tests/short_link_store.py` | Development short-link store. |
 | `.github/workflows/pages.yml` | Publishes `web/` to GitHub Pages. |
-| `experiments/` | Python prototypes: full-frame fits, colour, animation and puzzle tests. |
+| `experiments/` | Python prototypes: full-frame fits, color, animation and puzzle tests. |
 | `superpose.py`, `collage.py`, `anim_*.py` | The original prototype scripts. |
 
 ## Tests
@@ -173,7 +173,7 @@ GitHub Pages serves that branch. On the way it stamps the commit on every module
 and `packs.json` (`app.js?v=...`), because Pages' CDN keeps files for 10 minutes and a page
 mixing two deploys' scripts would break.
 
-## Credits and licences
+## Credits and licenses
 
 - **scikit-image sample data:** each image's credit is in `web/packs/packs.json`, from
   scikit-image's documentation.

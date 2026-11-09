@@ -1,11 +1,11 @@
-// core.js - the maths, shared by the page, the scoring workers and the Node tests.
+// core.js - the math, shared by the page, the scoring workers and the Node tests.
 // No DOM access in this file.
 //
 // A "piece" is a square crop of a source image, stretched to cover the whole
 // N x N frame, optionally rotated/flipped. A picture is approximated as
 //     sum_i  w_i * (piece_i - mean(piece_i))  +  target mean      (w_i >= 0)
 // i.e. pieces are added as light (non-negative weights) and one black level
-// per colour channel is set at the end.
+// per color channel is set at the end.
 
 export const N = 64;              // fitting resolution
 export const NN = N * N;
@@ -148,7 +148,7 @@ export function makeAtom(src, x, y, s, o, R, C, out, scratch) {
   return out;
 }
 
-// Quantise a float piece into dst[off..] as bytes; returns {norm, mean}: the
+// Quantize a float piece into dst[off..] as bytes; returns {norm, mean}: the
 // piece's mean per channel (neutral: one mean shared by all channels) and the
 // length of the piece with that mean removed.
 export function quantizeInto(vals, C, dst, off, neutral = false) {
@@ -171,7 +171,7 @@ export function quantizeInto(vals, C, dst, off, neutral = false) {
 }
 
 // Means from per-channel sums over RR pixels; neutral: every channel gets the overall mean
-// (so removing it subtracts the same grey from every channel, adding no tint).
+// (so removing it subtracts the same gray from every channel, adding no tint).
 export function channelMeans(sums, RR, neutral) {
   const C = sums.length, mean = new Float32Array(C);
   const all = sums.reduce((a, b) => a + b, 0) / (C * RR);
@@ -190,7 +190,7 @@ export function atomBytes(src, x, y, s, o, R, C, neutral = false) {
 /* ------------------------------------------------------------ candidate pool */
 export class PoolBuilder {
   // weights: how often each source is picked (default: by area, capped at 512 x 512)
-  // neutral: one black level for all channels (colour comes only from the images)
+  // neutral: one black level for all channels (color comes only from the images)
   // minFrac: each crop's side is at least this fraction of its image's shorter side
   //          (0: any size down to MIN_CROP; 1: the largest square, i.e. no zooming in)
   // rotate:  allow the 8 turns/flips (false: every piece upright and unflipped)
@@ -272,7 +272,7 @@ export function scoreBest(pool, norms, used, D, res) {
 // all weights are re-solved together (non-negative least squares by
 // coordinate descent on the Gram matrix, warm-started).
 export class Fitter {
-  // neutral: one black level for all channels, so the picture's colour comes only from
+  // neutral: one black level for all channels, so the picture's color comes only from
   // the images (otherwise one per channel, which also matches the target's overall tint)
   constructor(target, C, Kmax, { neutral = false } = {}) {
     const D = target.length, RR = D / C;
@@ -422,7 +422,7 @@ export function toRGBA(vec, C, R, out = new Uint8ClampedArray(R * R * 4), scale 
 
 /* ------------------------------------------------------------ share recipes */
 // Binary, little-endian:
-//   u8 version | u8 flags (bit 0: colour, bit 1: neutral black level) | u16 count | f32 tmean[C] | count x piece
+//   u8 version | u8 flags (bit 0: color, bit 1: neutral black level) | u16 count | f32 tmean[C] | count x piece
 //   version 3 piece: u8 image or map id, u8 zoom, u16 tile x, u16 tile y,
 //                    u16 x, u16 y, u16 size, u8 orient (bit 3: an item follows), f32 weight, [u32 item]
 //     (for a plain image, zoom and tile are 0 and x, y, size are in the image; for a map,

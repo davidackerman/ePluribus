@@ -25,7 +25,7 @@ def gray_rgba(a,alpha_gain=None,color=None,border=False,norm=None):
     return Image.fromarray(np.dstack([rgb,alpha[...,None]]).astype(np.uint8))
 
 def base(): return Image.new("RGBA",(W,H),tuple(int(x) for x in BG)+(255,))
-def place(canvas,img,cx,cy,s):     # tilt the plane by s in [0,1] (squash + shear) and centre it at (cx,cy)
+def place(canvas,img,cx,cy,s):     # tilt the plane by s in [0,1] (squash + shear) and center it at (cx,cy)
     a=1-0.45*s; b=-0.22*s
     data=(1/a,0,S/2-cx/a,-(b/a),1,S/2-cy+(b/a)*cx)
     canvas.alpha_composite(img.transform((W,H),Image.AFFINE,data,resample=Image.BILINEAR))

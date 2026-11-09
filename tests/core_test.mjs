@@ -15,7 +15,7 @@ const load = (key) => makeSource(key, meta[key].w, meta[key].h, new Uint8Array(r
 let failures = 0;
 const check = (ok, msg) => { console.log(`${ok ? "PASS" : "FAIL"}  ${msg}`); if (!ok) failures++; };
 
-// same five sources as the Python colour test
+// same five sources as the Python color test
 const ids = [0, 1, 2, 3, 5];
 const sources = ids.map((id) => load(String(id)));
 
@@ -73,7 +73,7 @@ const pieces = order.map((j, i) => {
 const code = encodeRecipe({ C, tmean: Array.from(fit.tmean), pieces });
 const dec = decodeRecipe(code);
 console.log(`recipe: ${pieces.length} pieces -> ${code.length} characters`);
-check(dec.pieces.length === pieces.length && dec.C === C, "recipe decodes to the same piece count and colour mode");
+check(dec.pieces.length === pieces.length && dec.C === C, "recipe decodes to the same piece count and color mode");
 const byId = Object.fromEntries(ids.map((id, i) => [id, sources[i]]));
 const rebuilt = dec.pieces.map((p) => atomBytes(byId[p.img], p.x, p.y, p.s, p.o, N, C));
 const same = rebuilt.every((a, i) => {
@@ -88,7 +88,7 @@ let maxDiff = 0;
 for (let p = 0; p < D; p++) maxDiff = Math.max(maxDiff, Math.abs(fromRecipe[p] - direct[p]));
 check(maxDiff < 1e-4, `picture rebuilt from the recipe matches the fit (max diff ${maxDiff.toExponential(1)})`);
 
-// ---- neutral mode: one black level for all channels (colour only from the images)
+// ---- neutral mode: one black level for all channels (color only from the images)
 if (C === 3) {
   const pbN = new PoolBuilder({ sources, count: 3000, C, seed: 2, neutral: true });
   pbN.step(3000);
