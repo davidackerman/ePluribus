@@ -487,7 +487,7 @@ async function finishBuild(run) {
     const p = run.pieces[i];
     run.hi.push(atomBytes(p.src, p.x, p.y, p.s, p.o, HI, C));
     if (i % 10 === 0) {
-      setStatus(`Sharpening: re-cutting all ${n} images at ${HI} px…`);
+      setStatus(`Rendering in high resolution: re-cutting all ${n} images at ${HI} px…`);
       setProgress(0.9 + (0.1 * i) / n);
       await nextFrame();
     }
